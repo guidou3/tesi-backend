@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.Enumeration;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
+import java.util.zip.GZIPInputStream;
 
 public class LogImporter {
     private static String resourcePath = "src/main/resources/";
@@ -42,7 +43,7 @@ public class LogImporter {
 //    }
 
     public static XLog importLog (PluginContext context, File file) throws Exception {
-        InputStream stream = new FileInputStream(file);
+        InputStream stream;
         if (file.getName().endsWith(".zip")) {
             // Open zip file.
             ZipFile zipFile = new ZipFile(file);
@@ -55,6 +56,12 @@ public class LogImporter {
             // Return stream of only entry in zip file.
             // Do not yet close zip file, as the retruend stream still needs to be read.
             stream = zipFile.getInputStream(zipEntry);
+        }
+        else if (file.getName().endsWith(".gz") ) {
+            stream = new GZIPInputStream(new FileInputStream(file));
+        }
+        else {
+            stream = new FileInputStream(file);
         }
         return importFromStream(context, stream, file.getName(), stream.available(), XFactoryRegistry.instance().currentDefault());
     }
