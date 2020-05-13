@@ -7,6 +7,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.Map;
 
 public class TimeInstance extends Constraint {
     private Side transitionSide;
@@ -15,7 +16,7 @@ public class TimeInstance extends Constraint {
     private String task;
     private Transition taskRef;
 
-    public void initialize(HashMap<String, Transition> id2transition, HashMap<String, String> id2NewId) {
+    public void initialize(Map<String, Transition> id2transition, Map<String, String> id2NewId) {
         taskRef = id2transition.get(id2NewId.get(task));
     }
 

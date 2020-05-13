@@ -1,5 +1,9 @@
 package org.processmining.Guido.converters;
 
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import org.deckfour.xes.classification.XEventClass;
 import org.processmining.models.graphbased.directed.bpmn.BPMNNode;
 import org.processmining.models.graphbased.directed.bpmn.elements.Event;
 import org.processmining.models.graphbased.directed.bpmn.elements.Gateway;
@@ -8,31 +12,32 @@ import org.processmining.models.graphbased.directed.petrinet.PetrinetNode;
 import org.processmining.models.graphbased.directed.petrinet.elements.Transition;
 import org.processmining.models.graphbased.directed.petrinetwithdata.newImpl.DataElement;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
-public class BpmnToDpnMapping {
-    HashMap<String, String> bpmnToDpn;
-    HashMap<String, BPMNNode> dpnToBpmn;
-    HashMap<Transition, BPMNNode> dpnToBpmnFinal;
+public class ActivityTransitionMapping {
+    Map<String, String> bpmnToDpn;
+    Multimap<String, String> dpnToBpmn;
 
-    public BpmnToDpnMapping() {
+    public ActivityTransitionMapping() {
         bpmnToDpn = new HashMap<>();
-        dpnToBpmn = new HashMap<>();
+        dpnToBpmn = HashMultimap.create();
     }
 
-    public void initializeFirst(HashMap<String, BPMNNode> id2node) {
-        for (Map.Entry<String, BPMNNode> entry : id2node.entrySet())
-            bpmnToDpn.put(entry.getKey(), entry.getValue().getId().toString());
+    // initialize bpmnToDpn map
+    public void firstStep(Map<String, String> id2node) {
+        bpmnToDpn = new HashMap<>(id2node);
 
-//        System.out.println("bpmnToDpn\tsize: " + bpmnToDpn.size());
-//        System.out.println("dpnToBpmn\tsize: " + dpnToBpmn.size());
-//        System.out.println("map\tsize: " + id2node.size() + "\n");
+        for(Map.Entry<String, String> entry : bpmnToDpn.entrySet())
+            dpnToBpmn.put(entry.getValue(), entry.getKey());
+
     }
 
-    public void initializeSecond(Map<BPMNNode, Set<PetrinetNode>> map) {
+    //initialize dpnToBpmn and update bpmnToDpn
+    public void secondStep(Map<BPMNNode, Set<PetrinetNode>> map) {
         Map<String, String> tempMap = new HashMap<>();
+        Map<String, String> tempMap1 = new HashMap<>();
+
         for(Map.Entry<BPMNNode, Set<PetrinetNode>> entry : map.entrySet()) {
             if(entry.getValue().size() > 1)  {
                 if(entry.getKey() instanceof Event) {
@@ -40,7 +45,7 @@ public class BpmnToDpnMapping {
                     if(e.getEventTrigger() != Event.EventTrigger.NONE) {
                         for(PetrinetNode item : entry.getValue()) {
                             if (item instanceof Transition || item instanceof DataElement) {
-                                dpnToBpmn.put(item.getId().toString(), entry.getKey());
+                                tempMap1.put(item.getId().toString(), entry.getKey().getId().toString());
                                 // non serve inserire questi dati nella mappa bpmn -> dpn in quanto non esistono vincoli
                                 // che si "attaccano" a eventi di questo tipo
                             }
@@ -62,18 +67,19 @@ public class BpmnToDpnMapping {
             }
             else {
                 String id = entry.getValue().iterator().next().getId().toString();
-                dpnToBpmn.put(id, entry.getKey());
+                tempMap1.put(id, entry.getKey().getId().toString());
                 tempMap.put(entry.getKey().getId().toString(), id);
             }
         }
         bpmnToDpn.replaceAll((k, v) -> tempMap.get(v));
-
-//        System.out.println("bpmnToDpn\tsize: " + bpmnToDpn.size());
-//        System.out.println("dpnToBpmn\tsize: " + dpnToBpmn.size());
-//        System.out.println("map\tsize: " + map.size() + "\n");
+        Multimap<String, String> tempMultiMap = HashMultimap.create();
+        tempMap1.forEach((k,v) -> {
+            tempMultiMap.putAll(k, dpnToBpmn.get(v));
+        });
+        dpnToBpmn = tempMultiMap;
     }
 
-    public void nextStep(HashMap<String, String> map) {
+    public void thirdStep(Map<String, String> map) {
 //        bpmnToDpn.replaceAll((k, v) -> map.get(v));
         HashMap<String, String> bpmnToDpn2 = new HashMap<>();
         for(Map.Entry<String, String> entry : bpmnToDpn.entrySet()) {
@@ -82,12 +88,11 @@ public class BpmnToDpnMapping {
         }
         bpmnToDpn = bpmnToDpn2;
 
-        HashMap<String, BPMNNode> dpnToBpmn2 = new HashMap<>();
-        for(Map.Entry<String, String> entry : map.entrySet()) {
-            if(dpnToBpmn.get(entry.getKey()) != null)
-                dpnToBpmn2.put(entry.getValue(), dpnToBpmn.get(entry.getKey()));
-        }
-        dpnToBpmn = dpnToBpmn2;
+        Multimap<String, String> tempMultiMap = HashMultimap.create();
+        map.forEach((k,v) -> {
+            tempMultiMap.putAll(v, dpnToBpmn.get(k));
+        });
+        dpnToBpmn = tempMultiMap;
 
 //        System.out.println("Next step");
 //        System.out.println("bpmnToDpn\tsize: " + bpmnToDpn.size());
@@ -96,24 +101,32 @@ public class BpmnToDpnMapping {
 
     }
 
-    public void TransitionToBPMNNode(HashMap<Transition, String> map) {
-        dpnToBpmnFinal = new HashMap<>();
-        for(Map.Entry<Transition, String> entry : map.entrySet()) {
-            if(dpnToBpmn.get(entry.getValue()) != null)
-                dpnToBpmnFinal.put(entry.getKey(), dpnToBpmn.get(entry.getValue()));
-        }
-
-
-//        System.out.println("Final");
-//        System.out.println("dpnToBpmnFinal\tsize: " + dpnToBpmnFinal.size());
-//        System.out.println("map\tsize: " + map.size() + "\n");
+    public void fourthStep(Map<String, String> map) {
+        Multimap<String, String> tempMultiMap = HashMultimap.create();
+        map.forEach((k,v) -> {
+            tempMultiMap.putAll(k, dpnToBpmn.get(v));
+        });
+        dpnToBpmn = tempMultiMap;
     }
 
-    public HashMap<String, String> getBpmnToDpn() {
+//    public void TransitionToBPMNNode(HashMap<Transition, String> map) {
+//        dpnToBpmnFinal = new HashMap<>();
+//        for(Map.Entry<Transition, String> entry : map.entrySet()) {
+//            if(dpnToBpmn.get(entry.getValue()) != null)
+//                dpnToBpmnFinal.put(entry.getKey(), dpnToBpmn.get(entry.getValue()));
+//        }
+//
+//
+////        System.out.println("Final");
+////        System.out.println("dpnToBpmnFinal\tsize: " + dpnToBpmnFinal.size());
+////        System.out.println("map\tsize: " + map.size() + "\n");
+//    }
+
+    public Map<String, String> getBpmnToDpn() {
         return bpmnToDpn;
     }
 
-    public HashMap<Transition, BPMNNode> getDpnToBpmn() {
-        return dpnToBpmnFinal;
+    public Map<String, Collection<String>> getDpnToBpmn() {
+        return dpnToBpmn.asMap();
     }
 }

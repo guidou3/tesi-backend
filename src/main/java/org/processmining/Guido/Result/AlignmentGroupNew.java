@@ -90,6 +90,7 @@ public class AlignmentGroupNew implements GroupedAlignments.AlignmentGroup {
 
     public final static class AlignmentGroupStep {
         private String label;
+        private String id;
         private CompositeMoveType moveType;
         private boolean invisible;
         private List<Utils.PairOfStrings> missingVariables;
@@ -111,6 +112,7 @@ public class AlignmentGroupNew implements GroupedAlignments.AlignmentGroup {
             this.label = move.getType() == MoveType.MODEL ?  move.getModelMove() : move.getLogMove();;
             this.moveType = new CompositeMoveType(XDataAlignmentExtension.instance().extendXAlignmentMove(move));
             this.invisible = !move.isObservable();
+            this.id = move.getActivityId();
             this.transitionColor = getHTMLColorString(activityColorMap.get(move.getActivityId()));
             if(transitionColor == null && !invisible)
                 transitionColor = "lightgray";

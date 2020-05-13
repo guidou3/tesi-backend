@@ -199,18 +199,18 @@ public class BPMN2DPNConverter extends BPMN2PetriNetConverter {
         }
     }
 
-    public void updateMapping(BpmnToDpnMapping bpmnToDpnMapping) {
-        bpmnToDpnMapping.initializeSecond(super.getNodeMap());
+    public void updateMapping(ActivityTransitionMapping bpmnToDpnMapping) {
+        bpmnToDpnMapping.secondStep(super.getNodeMap());
 
         // pn id to dpn id
         HashMap<String, String> oldDpnId2NewId = new HashMap<>();
-        HashMap<Transition, String> transitionToId = new HashMap<>();
+//        HashMap<Transition, String> transitionToId = new HashMap<>();
         for(Map.Entry<Transition, Transition> entry : transitionsMap.entrySet()) {
             oldDpnId2NewId.put(entry.getKey().getId().toString(), entry.getValue().getId().toString());
-            transitionToId.put(entry.getValue(), entry.getValue().getId().toString());
+//            transitionToId.put(entry.getValue(), entry.getValue().getId().toString());
         }
-        bpmnToDpnMapping.nextStep(oldDpnId2NewId);
-        bpmnToDpnMapping.TransitionToBPMNNode(transitionToId);
+        bpmnToDpnMapping.thirdStep(oldDpnId2NewId);
+//        bpmnToDpnMapping.TransitionToBPMNNode(transitionToId);
 
 
 //        HashMap<String, String> id2NewId = new HashMap<>();

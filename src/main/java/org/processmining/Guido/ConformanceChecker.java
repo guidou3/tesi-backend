@@ -18,7 +18,9 @@ import org.processmining.Guido.InOut.ControlFlowViolationCosts;
 import org.processmining.Guido.InOut.PnmlExporter;
 import org.processmining.Guido.InOut.VariableBoundsEntry;
 import org.processmining.Guido.InOut.VariableMatchCostEntry;
+import org.processmining.Guido.Result.ActivityGraphDetails;
 import org.processmining.Guido.Result.AlignmentGroupNew;
+import org.processmining.Guido.Result.AlignmentGroupResult;
 import org.processmining.Guido.Result.GroupOutput;
 import org.processmining.Guido.converters.*;
 import org.processmining.Guido.importers.*;
@@ -94,7 +96,7 @@ public class ConformanceChecker {
     private DummyUIPluginContext context;
 
     private DPNConverter dpnConverter;
-    private BpmnToDpnMapping bpmnToDpnMapping;
+    private ActivityTransitionMapping activityTransitionMapping;
 
     private FinalMapping finalMapping;
     private VariableMapping variableMapping;
@@ -108,17 +110,20 @@ public class ConformanceChecker {
     public ConformanceChecker() {
         PluginManagerImpl.initialize(UIPluginContext.class);
         context = new DummyUIPluginContext();
+
+        activityTransitionMapping = new ActivityTransitionMapping();
     }
 
     public ConformanceChecker(boolean bool) {
         this();
         try {
-//            setModelDpn(new File("./data/models/prova.pnml"));
-            setModelBpmn(new File("./data/models/prova.bpmn"));
-            convertBpmnToDpn();
             hasCustomElements = bool;
 
-            setLog(new File("./data/logs/prova.xes"));
+            setModelBpmn("./data/models/prova.bpmn");
+            setLog("./data/logs/road_fines_with_remaining_amount_variable.xes.gz");
+            setCustomElements("./data/customElements/customElements.cbpmn");
+
+            convertBpmnToDpn();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -136,8 +141,7 @@ public class ConformanceChecker {
         if(bpmn == null) throw new Exception("Bpmn not loaded");
 
         modelBpmn = bpmnImporter.bpmnToDiagram();
-        bpmnToDpnMapping = new BpmnToDpnMapping();
-        bpmnToDpnMapping.initializeFirst(bpmnImporter.getMap());
+        activityTransitionMapping.firstStep(bpmnImporter.getMap());
     }
 
     public void setLog(String s) throws Exception {
@@ -191,12 +195,10 @@ public class ConformanceChecker {
     public void setCustomElements(File ce) {
         customElementsFile = ce;
         customElements = JsonImporter.importJson(ce);
+    }
 
-        if(net == null)
-            convertBpmnToDpn();
-
-        assert customElements != null;
-        customElements.initialize(net, bpmnToDpnMapping.getBpmnToDpn());
+    public void initializeCustomElements() {
+        customElements.initialize(net, activityTransitionMapping.getBpmnToDpn());
     }
 
     public void convertBpmnToDpn() {
@@ -204,7 +206,7 @@ public class ConformanceChecker {
         // convert bpmn to data petrinet
         net = bpmn2DpnConverter.convert(context, modelBpmn);
 
-        bpmn2DpnConverter.updateMapping(bpmnToDpnMapping);
+        bpmn2DpnConverter.updateMapping(activityTransitionMapping);
     }
 
     public void exportDpn(DataPetriNet dataPetriNet, String name) {
@@ -221,6 +223,8 @@ public class ConformanceChecker {
     public void customDpnConversion() throws NonExistingVariableException {
         dpnConverter = new DPNConverter(config);
         customNet = dpnConverter.convertDpn(net, customElements);
+        dpnConverter.updateIdMapping(activityTransitionMapping);
+
     }
 
     public void updateFinalMapping1() {
@@ -243,10 +247,8 @@ public class ConformanceChecker {
         return Configs.getDefaultValues();
     }
 
-    public void setConfigs(Configs c) throws Exception {
+    public void setConfigs(Configs c) {
         config = c.createConfig();
-
-
     }
 
     public InitialMapping getInitialMapping() {
@@ -264,7 +266,9 @@ public class ConformanceChecker {
         if(hasCustomElements) {
             extractLogPositions();
             exportDpn(net, "prova1.pnml");
-            setCustomElements("./data/customElements/customElements.json");
+
+            initializeCustomElements();
+
             customDpnConversion();
 
 //            CyclesFinder cf = new CyclesFinder(net);
@@ -420,7 +424,7 @@ public class ConformanceChecker {
         return context.getProgress();
     }
 
-    public List<GroupOutput> getGroups() {
+    public AlignmentGroupResult getGroups() {
         if(result == null) return null;
         XAlignmentConverter converter = new XAlignmentConverter();
         XTraceResolver traceResolver = buildTraceMap(result);
@@ -440,8 +444,29 @@ public class ConformanceChecker {
         for(AlignmentGroup group : groups) {
             output.add(((AlignmentGroupNew) group).getOutput());
         }
+        Map<String, Collection<String>> transitionToActivity = activityTransitionMapping.getDpnToBpmn();
+        List<ActivityGraphDetails> activityGraphDetails = new ArrayList<>();
+        for(Transition node : customNet.getTransitions()) {
+            if(node.isInvisible()) continue;
+            float[] actArray =result.actArray.get(node.getLabel());
+            if (actArray==null) continue;
 
-        return output;
+            float value = stepsToValue(actArray, node);
+
+            Color fillColor = getColorForValue(value);
+            Color textColor = new Color(255 - fillColor.getRed(), 255 - fillColor.getGreen(), 255 - fillColor.getBlue());
+
+            activityGraphDetails.add(new ActivityGraphDetails(
+                    transitionToActivity.get(node.getId().toString()),
+                    node.getLabel(),
+                    value,
+                    actArray,
+                    getHTMLColorString(fillColor),
+                    getHTMLColorString(textColor)
+                    ));
+        }
+
+        return new AlignmentGroupResult(output, activityGraphDetails);
     }
 
     private XTraceResolver buildTraceMap(ResultReplay logReplayResult) {
@@ -503,14 +528,8 @@ public class ConformanceChecker {
                 else {
                     float[] actArray =result.actArray.get(node.getLabel());
                     if (actArray!=null) {
-                        float value;
-                        if (actArray[0]+actArray[1]==0 || ((PNWDTransition)node).getWriteOperations().size()==0)
-                            value=(actArray[0]+actArray[1])/(actArray[0]+actArray[1]+actArray[2]+actArray[3]);
-                        else {
-                            float dataFlowValue=actArray[0]/(actArray[0]+actArray[1]);
-                            float controlFlowValue=(actArray[0]+actArray[1])/(actArray[0]+actArray[1]+actArray[2]+actArray[3]);
-                            value=2*dataFlowValue*controlFlowValue/(dataFlowValue+controlFlowValue);
-                        }
+                        float value = stepsToValue(actArray, node);
+
                         Color fillColor=getColorForValue(value);
                         Color textColor=new Color(255-fillColor.getRed(),255-fillColor.getGreen(),255-fillColor.getBlue());
                         node.getAttributeMap().put(AttributeMap.FILLCOLOR, fillColor);
@@ -572,46 +591,58 @@ public class ConformanceChecker {
         return Jsoup.parse(s).text();
     }
 
-    public String renderBpmnDot() {
-        if(result != null) {
-            HashMap<Transition, BPMNNode> map = bpmnToDpnMapping.getDpnToBpmn();
-            for(Transition node : net.getTransitions()) {
-                if (!node.isInvisible()){
-                    float[] actArray =result.actArray.get(node.getLabel());
-                    if (actArray!=null) {
-                        float value;
-                        if (actArray[0]+actArray[1]==0 || ((PNWDTransition)node).getWriteOperations().size()==0)
-                            value=(actArray[0]+actArray[1])/(actArray[0]+actArray[1]+actArray[2]+actArray[3]);
-                        else {
-                            float dataFlowValue=actArray[0]/(actArray[0]+actArray[1]);
-                            float controlFlowValue=(actArray[0]+actArray[1])/(actArray[0]+actArray[1]+actArray[2]+actArray[3]);
-                            value=2*dataFlowValue*controlFlowValue/(dataFlowValue+controlFlowValue);
-                        }
-                        Color fillColor=getColorForValue(value);
-                        Color textColor=new Color(255-fillColor.getRed(),255-fillColor.getGreen(),255-fillColor.getBlue());
-                        BPMNNode bpmnNode = map.get(node);
-                        bpmnNode.getAttributeMap().put(AttributeMap.FILLCOLOR, fillColor);
-                        bpmnNode.getAttributeMap().put(AttributeMap.LABELCOLOR, textColor);
-                        String tooltip = "<html><table><tr><td><b>Number moves in both without incorrect write operations:</b> " + (int) actArray[0] +
-                                "</td></tr><tr><td><b>Number moves in both with incorrect write operations:</b> " +
-                                (int) actArray[1] +
-                                "</td></tr><tr><td><b>Number moves in log:</b> " +
-                                (int) actArray[2] +
-                                "</td></tr><tr><td><b>Number moves in model:</b> " +
-                                (int) actArray[3] +
-                                "</td></tr></table></html>";
-                        bpmnNode.getAttributeMap().put(AttributeMap.TOOLTIP, tooltip);
-                    }
-                }
-            }
-        }
-
-        return GraphVisualizerPlugin.runUI(context, modelBpmn);
-    }
+//    public String renderBpmnDot() {
+//        if(result != null) {
+//            HashMap<Transition, BPMNNode> map = bpmnToDpnMapping.getDpnToBpmn();
+//            for(Transition node : net.getTransitions()) {
+//                if (!node.isInvisible()){
+//                    float[] actArray =result.actArray.get(node.getLabel());
+//                    if (actArray!=null) {
+//                        float value;
+//                        if (actArray[0]+actArray[1]==0 || ((PNWDTransition)node).getWriteOperations().size()==0)
+//                            value=(actArray[0]+actArray[1])/(actArray[0]+actArray[1]+actArray[2]+actArray[3]);
+//                        else {
+//                            float dataFlowValue=actArray[0]/(actArray[0]+actArray[1]);
+//                            float controlFlowValue=(actArray[0]+actArray[1])/(actArray[0]+actArray[1]+actArray[2]+actArray[3]);
+//                            value=2*dataFlowValue*controlFlowValue/(dataFlowValue+controlFlowValue);
+//                        }
+//                        Color fillColor=getColorForValue(value);
+//                        Color textColor=new Color(255-fillColor.getRed(),255-fillColor.getGreen(),255-fillColor.getBlue());
+//                        BPMNNode bpmnNode = map.get(node);
+//                        bpmnNode.getAttributeMap().put(AttributeMap.FILLCOLOR, fillColor);
+//                        bpmnNode.getAttributeMap().put(AttributeMap.LABELCOLOR, textColor);
+//                        String tooltip = "<html><table><tr><td><b>Number moves in both without incorrect write operations:</b> " + (int) actArray[0] +
+//                                "</td></tr><tr><td><b>Number moves in both with incorrect write operations:</b> " +
+//                                (int) actArray[1] +
+//                                "</td></tr><tr><td><b>Number moves in log:</b> " +
+//                                (int) actArray[2] +
+//                                "</td></tr><tr><td><b>Number moves in model:</b> " +
+//                                (int) actArray[3] +
+//                                "</td></tr></table></html>";
+//                        bpmnNode.getAttributeMap().put(AttributeMap.TOOLTIP, tooltip);
+//                    }
+//                }
+//            }
+//        }
+//
+//        return GraphVisualizerPlugin.runUI(context, modelBpmn);
+//    }
 
     // -----------------------------------
     // * * * * * PRIVATE METHODS * * * * *
     // -----------------------------------
+
+    private float stepsToValue(float[] counts, Transition t) {
+        float value;
+        if (counts[0] + counts[1] == 0 || ((PNWDTransition) t).getWriteOperations().size() == 0)
+            value = (counts[0] + counts[1]) / (counts[0] + counts[1] + counts[2] + counts[3]);
+        else {
+            float dataFlowValue = counts[0] / (counts[0] + counts[1]);
+            float controlFlowValue = (counts[0] + counts[1]) / (counts[0] + counts[1] + counts[2] + counts[3]);
+            value = 2 * dataFlowValue * controlFlowValue / (dataFlowValue + controlFlowValue);
+        }
+        return value;
+    }
 
     private Map<String, Transition> getLabelToTransition() {
         Map<String, Transition> labelToTransition = new HashMap<>();

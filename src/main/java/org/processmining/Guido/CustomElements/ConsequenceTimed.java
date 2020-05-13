@@ -7,6 +7,7 @@ import org.processmining.Guido.CustomElements.enums.TimeUnit;
 public class ConsequenceTimed extends Consequence {
     private TimeData timeData;
     private Ineq ineq;
+    private boolean forced;
 
     public float getTime() {
         return timeData.getTime();
@@ -26,5 +27,9 @@ public class ConsequenceTimed extends Consequence {
 
     public String getOppositeIneq() {
         return ineq.getOpposite();
+    }
+
+    public boolean isForced() {
+        return forced;
     }
 }

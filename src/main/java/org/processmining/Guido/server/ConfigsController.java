@@ -196,7 +196,7 @@ public class ConfigsController {
     }
 
     @GetMapping("/groups")
-    public ResponseEntity<List<GroupOutput>> getGroups() {
+    public ResponseEntity<AlignmentGroupResult> getGroups() {
         try {
             return ResponseEntity.status(HttpStatus.OK).body(cc.getGroups());
         } catch (Exception e) {
@@ -245,14 +245,14 @@ public class ConfigsController {
         }
     }
 
-    @GetMapping("/bpmnDot")
-    public ResponseEntity<String> bpmnDot() {
-        try {
-            return ResponseEntity.status(HttpStatus.OK).body(cc.renderBpmnDot());
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(null);
-        }
-    }
+//    @GetMapping("/bpmnDot")
+//    public ResponseEntity<String> bpmnDot() {
+//        try {
+//            return ResponseEntity.status(HttpStatus.OK).body(cc.renderBpmnDot());
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(null);
+//        }
+//    }
 
 }

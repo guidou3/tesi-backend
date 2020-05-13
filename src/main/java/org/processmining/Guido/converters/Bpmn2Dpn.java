@@ -56,7 +56,7 @@ public class Bpmn2Dpn {
         System.out.println(errors_warnings.toString());
     }
 
-    public void updateMapping(BpmnToDpnMapping mapping) {
+    public void updateMapping(ActivityTransitionMapping mapping) {
         conv.updateMapping(mapping);
     }
 }

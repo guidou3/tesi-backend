@@ -34,7 +34,7 @@ public class CustomElements implements Serializable {
 
 //    HashMap<String, CustomShape> id2shape;
 
-    public void initialize(DataPetriNet dataPetriNet, HashMap<String, String> id2NewId) {
+    public void initialize(DataPetriNet dataPetriNet, Map<String, String> id2NewId) {
 
         HashMap<String, Transition> id2transition = new HashMap<>();
         idToConstraint = new HashMap<>();

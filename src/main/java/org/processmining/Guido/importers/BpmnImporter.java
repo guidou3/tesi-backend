@@ -10,8 +10,10 @@ import org.processmining.models.connections.petrinets.behavioral.InitialMarkingC
 import org.processmining.models.graphbased.directed.bpmn.BPMNDiagram;
 import org.processmining.models.graphbased.directed.bpmn.BPMNDiagramFactory;
 import org.processmining.models.graphbased.directed.bpmn.BPMNNode;
+import org.processmining.models.graphbased.directed.bpmn.elements.Activity;
 import org.processmining.models.graphbased.directed.bpmn.elements.Swimlane;
 import org.processmining.plugins.bpmn.Bpmn;
+import org.processmining.plugins.bpmn.BpmnProcess;
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserFactory;
 
@@ -94,16 +96,21 @@ public class BpmnImporter {
     public BPMNDiagram bpmnToDiagram() {
         if(newDiagram == null) {
             newDiagram = BPMNDiagramFactory.newBPMNDiagram("");
-            id2node = new HashMap<String, BPMNNode>();
-            id2lane = new HashMap<String, Swimlane>();
+            id2node = new HashMap<>();
+            id2lane = new HashMap<>();
             bpmn.unmarshall(newDiagram, id2node, id2lane);
         }
 
         return newDiagram;
     }
 
-    public HashMap<String, BPMNNode> getMap() {
-        return (HashMap<String, BPMNNode>) id2node;
+    public Map<String, String> getMap() {
+        Map<String, String> map = new HashMap<>();
+        for(Map.Entry<String, BPMNNode> entry : id2node.entrySet())
+            if(entry.getValue() instanceof Activity && !entry.getKey().startsWith("output"))
+                map.put(entry.getKey(), entry.getValue().getId().toString());
+
+        return map;
     }
 
     public HashMap<String, String> getIdToNewId2() {

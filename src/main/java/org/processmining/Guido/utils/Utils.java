@@ -39,14 +39,22 @@ public class Utils {
     }
 
     public static Color getColorForValue(float value) {
-        assert(value<=1 && value>=0);
-        value=0.2F+value*0.8F;
-        float red=(float) (Math.min(value, 0.3333)*3);
-        value=(float) Math.max(value-0.3333, 0);
-        float green=(float) (Math.min(value, 0.3333)*3);
-        value=(float) Math.max(value-0.3333, 0);
-        float blue=(float) (Math.min(value, 0.3333)*3);
-        return new Color(red,green,blue);
+//        assert(value<=1 && value>=0);
+//        value=0.2F+value*0.8F;
+//        float red=(float) (Math.min(value, 0.3333)*3);
+//        value=(float) Math.max(value-0.3333, 0);
+//        float green=(float) (Math.min(value, 0.3333)*3);
+//        value=(float) Math.max(value-0.3333, 0);
+//        float blue=(float) (Math.min(value, 0.3333)*3);
+//        return new Color(red,green,blue);
+        int red = 255, green = 0;
+        if(value < 0.5)
+            green += (255) * value*2;
+        else {
+            green = 255;
+            red -=  (255) * (value-0.5)*2;
+        }
+        return new Color(red, green,0);
     }
 
     public static String getHTMLColorString(Color color) {
@@ -59,6 +67,10 @@ public class Utils {
                 (red.length() == 1? "0" + red : red) +
                 (green.length() == 1? "0" + green : green) +
                 (blue.length() == 1? "0" + blue : blue);
+    }
+
+    public static String getHTMLColorForValue(float value) {
+        return getHTMLColorString(getColorForValue(value));
     }
 
     public static class PairOfStrings {

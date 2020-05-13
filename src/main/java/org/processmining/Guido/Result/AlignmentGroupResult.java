@@ -10,11 +10,11 @@ import java.util.Set;
 
 public class AlignmentGroupResult {
     private List<GroupOutput> groups;
-    private Map<String, String> labelColorMap;
+    private List<ActivityGraphDetails> activityGraphDetails;
 
-    public AlignmentGroupResult(List<GroupOutput> groups, Map<String, String> labelColorMap) {
+    public AlignmentGroupResult(List<GroupOutput> groups, List<ActivityGraphDetails> activityGraphDetails) {
         this.groups = groups;
-        this.labelColorMap = labelColorMap;
+        this.activityGraphDetails = activityGraphDetails;
 
     }
 }

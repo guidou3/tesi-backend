@@ -126,7 +126,7 @@ public class DPNConverter {
 
             // convert sequence constraints
             for (ConsequenceTimed consequence: ce.getConsequencesTimed()) {
-                addConsequence(dpn, consequence);
+                addConsequenceTimed(dpn, consequence);
             }
 
             // convert task duration
@@ -256,7 +256,8 @@ public class DPNConverter {
         return result;
     }
 
-    DataPetriNetWithCustomElements cloneDataPetriNet(final DataPetriNetWithCustomElements originalDpn) throws NonExistingVariableException {
+    DataPetriNetWithCustomElements cloneDataPetriNet(final DataPetriNetWithCustomElements originalDpn)
+            throws NonExistingVariableException {
         final DataPetriNetWithCustomElements dpn = new DataPetriNetWithCustomElements(originalDpn.getLabel());
 
         // add places
@@ -330,6 +331,15 @@ public class DPNConverter {
 //		dpn.setInitialMarking(placesMap.get(dpn.getInitialMarkings()));
 //		dpn.setFinalMarkings(dpn.getFinalMarkings());
         return dpn;
+    }
+
+    public void updateIdMapping(ActivityTransitionMapping mapping) {
+        Map<String, String> idToId = new HashMap<>();
+        for(Map.Entry<Transition, Transition> entry : transitionsMap.entrySet()) {
+            idToId.put(entry.getValue().getId().toString(), entry.getKey().getId().toString());
+        }
+
+        mapping.fourthStep(idToId);
     }
 
     private boolean keepEventByLifecycle(Collection<Transition> transitions) {
@@ -520,32 +530,12 @@ public class DPNConverter {
                     target = getTransition(dpn, sequence.getTargetRef(), sequence.getTargetSide()),
                     last = dpn.getLastTransition();
 
-            String varName = "custom:ConsequenceOpen" + "_" + sequence.getId();
-            DataElement var = dpn.addVariable(varName, convertType(DPNParserConstants.BOOLEAN), null, null);
-            dpn.assignWriteOperation(source, var);
-            dpn.assignWriteOperation(target, var);
-            // eventuale operazione di scrittura all'interno dei cicli
-            consequenceSourceVarMap.put(source, var);
-            consequenceTargetVarMap.put(target, var);
-
-            String guard = String.format("((%s==false)||(%s==null))", var, var);
-
             String label = "custom:Consequence<|>" + sequence.getId();
-            if(sequence instanceof ConsequenceTimed)
-                label = "custom:ConsequenceTimed<|>" + sequence.getId() + "<|>ConsequenceCheck";
 
-            if(evaluationMode) {
-                String guard1 = String.format("(%s==true)", var);
+            // TODO
+            //  al posto di fare il controllo su last, trovare nel modello il punto di convergenza più vicino tra source
+            //  e target e porre lì il controllo
 
-
-                // in questo caso i controlli vengono effettuati prima della transizione
-    //                addInvisibleControls(source, dpn, label, guard, guard1, false);
-                addInvisibleControls(last, dpn, label, guard, guard1, false);
-            }
-            else {
-    //                addGuardExpression(dpn, source, guard);
-                addInvisibleControl(last, dpn, label, guard, false);
-            }
 
             // TODO: check that this is the only consequence between source and target
 
@@ -589,30 +579,75 @@ public class DPNConverter {
     //        }
 
             //TODO: implement time constraint
-            if (sequence instanceof ConsequenceTimed) {
-                ConsequenceTimed consequenceTimed = (ConsequenceTimed) sequence;
+            String varName = "custom:ConsequenceOpen" + "_" + sequence.getId();
+            DataElement var = dpn.addVariable(varName, convertType(DPNParserConstants.BOOLEAN), null, null);
+            dpn.assignWriteOperation(source, var);
+            dpn.assignWriteOperation(target, var);
+            // eventuale operazione di scrittura all'interno dei cicli
+            consequenceSourceVarMap.put(source, var);
+            consequenceTargetVarMap.put(target, var);
 
-                Class<?> varType = convertType(DPNParserConstants.CONTINUOUS);
-                DataElement sourceVar = addNonExistingTimeVarToMap(source, dpn, varType, false);
-                DataElement targetVar = addNonExistingTimeVarToMap(target, dpn, varType, false);
+            String guard = String.format("((%s==false)||(%s==null))", var, var);
 
-                // aggiungi timeData ad una Map<Transition, List<TimeData>>
-                // una volta inseriti tutti determino la timeUnit minore e creo le guardie messe temporaneamente in sospeso
-                // nel frattempo metto le guardie da creare in una lista corrispondente al tipo di guardia corrispettivo
+            if(evaluationMode) {
+                String guard1 = String.format("(%s==true)", var);
 
-                float time = consequenceTimed.getTimeData().unitTo(transitionTimeUnitMap.get(source));
+                // in questo caso i controlli vengono effettuati prima della transizione
+                //                addInvisibleControls(source, dpn, label, guard, guard1, false);
+                addInvisibleControls(last, dpn, label, guard, guard1, false);
+            }
+            else {
+                //                addGuardExpression(dpn, source, guard);
+                addInvisibleControl(last, dpn, label, guard, false);
+            }
+        }
+        catch (MissingTransitionSideException ex) {
+            System.out.println(ex.getMessage());
+        }
+    }
 
-                String guard1 = String.format("((%s==null)||(%s%s(%s+%s)))", sourceVar, targetVar, consequenceTimed.getIneq(), sourceVar, time);
+    void addConsequenceTimed(DataPetriNetWithCustomElements dpn, ConsequenceTimed consequenceTimed) {
+        try {
+            Transition source = getTransition(dpn, consequenceTimed.getSourceRef(), consequenceTimed.getSourceSide()),
+                    target = getTransition(dpn, consequenceTimed.getTargetRef(), consequenceTimed.getTargetSide()),
+                    last = dpn.getLastTransition();
+
+            String label = "custom:ConsequenceTimed<|>" + consequenceTimed.getId();
+
+            Class<?> varType = convertType(DPNParserConstants.CONTINUOUS);
+            DataElement sourceVar = addNonExistingTimeVarToMap(source, dpn, varType, false);
+            DataElement targetVar = addNonExistingTimeVarToMap(target, dpn, varType, false);
+
+            // aggiungi timeData ad una Map<Transition, List<TimeData>>
+            // una volta inseriti tutti determino la timeUnit minore e creo le guardie messe temporaneamente in sospeso
+            // nel frattempo metto le guardie da creare in una lista corrispondente al tipo di guardia corrispettivo
+
+            float time = consequenceTimed.getTimeData().unitTo(transitionTimeUnitMap.get(source));
+
+            String guard = String.format("((%s==null)||(%s%s%s(%s+%s)))", sourceVar, targetVar, evaluationMode ? "": "'",
+                    consequenceTimed.getIneq(), sourceVar, time);
+
+            if(evaluationMode) {
+                String expression1 = "((%s!=null)&&(%s%s(%s+%s)))";
+                String guard1 = String.format(expression1, sourceVar, targetVar, consequenceTimed.getOppositeIneq(), sourceVar, time);
+
+                addInvisibleControls(target, dpn, label + "<|>TimeCheck", guard, guard1, true);
+            }
+            else
+                addGuardExpression(dpn, target, guard);
+
+            // if the consequenceTimed is forced add the control at the end of the model
+            // TODO: to obtain better performances find the closest sure meeting point of the path of both source and
+            //  target. This should cut down the time to find the optimal path.
+            if(consequenceTimed.isForced()) {
+                String guard2 = String.format("((%s==null)||((%s!=null)&&(%s!=null)))", sourceVar, sourceVar, targetVar);
 
                 if(evaluationMode) {
-                    String expression2 = "((%s!=null)&&(%s%s(%s+%s)))";
-                    String guard2 = String.format(expression2, sourceVar, targetVar, consequenceTimed.getOppositeIneq(), sourceVar, time);
-
-                    addInvisibleControls(target, dpn, label + "<|>TimeCheck", guard1, guard2, true);
+                    String guard3 = String.format("(((%s!=null)&&(%s==null)))", sourceVar, targetVar);
+                    addInvisibleControls(last, dpn, label+ "<|>ConsequenceCheck", guard2, guard3, false);
                 }
-                else {
-                    addGuardExpression(dpn, target, guard1);
-                }
+                else
+                    addInvisibleControl(last, dpn, label, guard2, false);
             }
         }
         catch (MissingTransitionSideException ex) {
