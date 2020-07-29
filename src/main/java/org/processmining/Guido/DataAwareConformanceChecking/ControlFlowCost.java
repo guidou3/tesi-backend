@@ -61,7 +61,7 @@ public class ControlFlowCost {
         this.tableContent = tableContent;
         for(String s : this.tableContent.keySet()) {
             if(s.contains("custom:") && s.contains("Wrong"))
-                this.tableContent.put(s, 1);
+                this.tableContent.put(s, 0);
 //            else
 //                this.tableContent.put(s, this.tableContent.get(s)*10);
         }

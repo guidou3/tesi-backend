@@ -7,6 +7,13 @@ public class TimeDistance extends CustomConnection {
     private TimeData timeData;
     private Ineq ineq;
 
+    public TimeDistance(TimeDistance timeDistance) {
+        super(timeDistance);
+        this.side = timeDistance.side;
+        this.timeData = timeDistance.timeData;
+        this.ineq = timeDistance.ineq;
+    }
+
     public Side getSide() {
         return side;
     }

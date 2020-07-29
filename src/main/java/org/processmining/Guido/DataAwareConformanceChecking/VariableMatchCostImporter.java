@@ -104,8 +104,24 @@ public class VariableMatchCostImporter {
         return variables;
     }
 
-    public void setTable(List<VariableMatchCostEntry> newList) {
+    public void setTable(List<VariableMatchCostEntry> newList, boolean evaluation, boolean forced) {
         values = new ArrayList<>();
+
+        if(evaluation) {
+            for(Map.Entry<String, MatchingXAttribute> entry : attributeMatchingList.entrySet()) {
+                if(entry.getKey().startsWith("custom:")) {
+                    VariableMatchCostUI item = new VariableMatchCostUI();
+                    item.setActivity(activityMatchingList.get("*"));
+                    item.setVariable(entry.getValue());
+                    item.setCostFaultyValue(1);
+                    item.setCostNotWriting(0);
+                    item.setFinal(false);
+
+                    values.add(item);
+                }
+            }
+        }
+
         // devo convertire i valori della tabella in VariableMatchCostUI
         // per fare questo mi servono le liste di MatchActivity e MatchAttribute e le funzioni per transformare label in oggetti
         for (VariableMatchCostEntry entry : newList) {

@@ -24,6 +24,7 @@ import java.util.Set;
 public class ConstraintsBalancedConfiguration extends BalancedProcessorConfiguration {
     private boolean evaluationMode = false;
     private boolean startComplete = false;
+    private boolean evaluationForced = true;
 
 //    public static BalancedProcessorConfiguration newDefaultInstance(PetrinetGraph net, Marking initialMarking,
 //                                                                    Marking[] finalMarkings, XLog log, XEventClassifier classifier, int defaultMoveOnModelCost,
@@ -165,12 +166,13 @@ public class ConstraintsBalancedConfiguration extends BalancedProcessorConfigura
     public ConstraintsBalancedConfiguration(Marking initialMarking, Marking[] finalMarkings,
                                           TransEvClassMapping activityMapping, Map<XEventClass, Integer> mapEvClass2Cost,
                                           Map<Transition, Integer> mapTrans2Cost, Map<String, String> variableMapping,
-                                          VariableMatchCosts variableCost, boolean evaluationMode, boolean startComplete,
+                                          VariableMatchCosts variableCost, boolean evaluationMode, boolean startComplete, boolean evaluationForced,
                                             boolean usePartialOrder) {
         super(initialMarking, finalMarkings, activityMapping, mapEvClass2Cost, mapTrans2Cost, variableMapping,
                 variableCost, usePartialOrder);
         this.evaluationMode = evaluationMode;
         this.startComplete = startComplete;
+        this.evaluationForced = evaluationForced;
     }
 
     /**
@@ -200,6 +202,7 @@ public class ConstraintsBalancedConfiguration extends BalancedProcessorConfigura
         super(config);
         evaluationMode = config.isEvaluationMode();
         startComplete = config.isStartComplete();
+        evaluationForced = config.isEvaluationForced();
     }
 
     public boolean isEvaluationMode() {
@@ -216,5 +219,13 @@ public class ConstraintsBalancedConfiguration extends BalancedProcessorConfigura
 
     public void setStartComplete(boolean startComplete) {
         this.startComplete = startComplete;
+    }
+
+    public boolean isEvaluationForced() {
+        return evaluationForced;
+    }
+
+    public void setEvaluationForced(boolean evaluationForced) {
+        this.evaluationForced = evaluationForced;
     }
 }

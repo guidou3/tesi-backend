@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.swing.JComponent;
+import javax.xml.crypto.Data;
 
 import org.processmining.contexts.uitopia.UIPluginContext;
 import org.processmining.framework.plugin.PluginContext;
@@ -18,6 +19,7 @@ import org.processmining.models.graphbased.directed.DirectedGraph;
 import org.processmining.models.graphbased.directed.DirectedGraphEdge;
 import org.processmining.models.graphbased.directed.DirectedGraphNode;
 import org.processmining.models.graphbased.directed.bpmn.elements.Gateway;
+import org.processmining.models.graphbased.directed.petrinetwithdata.newImpl.DataElement;
 import org.processmining.models.shapes.*;
 import org.processmining.plugins.graphviz.colourMaps.ColourMap;
 import org.processmining.plugins.graphviz.dot.Dot;
@@ -39,58 +41,58 @@ public class GraphVisualizerAlgorithm {
 	 * @return The JComponent containing the dot visualization of the graph.
 	 */
 	public static String apply(UIPluginContext context,
-			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph) {
-		return apply(((PluginContext) context), graph);
-
-	}
-
-	public static String apply(PluginContext context,
-			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph) {
-		return apply(context, graph, new ViewSpecificAttributeMap(), new GraphVisualizerParameters());
-
-	}
-
-	public static String apply(UIPluginContext context,
-			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph,
-			GraphVisualizerParameters parameters) {
-		return apply(((PluginContext) context), graph, parameters);
-
-	}
-
-	public static String apply(PluginContext context,
-			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph,
-			GraphVisualizerParameters parameters) {
-		return apply(context, graph, new ViewSpecificAttributeMap(), parameters);
-
-	}
-
-	public static String apply(UIPluginContext context,
-			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph,
-			ViewSpecificAttributeMap map) {
+			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph, Map<String, String> map) {
 		return apply(((PluginContext) context), graph, map);
+
 	}
 
 	public static String apply(PluginContext context,
-			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph,
-			ViewSpecificAttributeMap map) {
-		return apply(context, graph, map, new GraphVisualizerParameters());
+			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph, Map<String, String> map) {
+		return apply(context, graph, new ViewSpecificAttributeMap(), new GraphVisualizerParameters(), map);
+
 	}
 
 	public static String apply(UIPluginContext context,
 			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph,
-			ViewSpecificAttributeMap map, GraphVisualizerParameters parameters) {
-		return apply(((PluginContext) context), graph, map, parameters);
+			GraphVisualizerParameters parameters, Map<String, String> map) {
+		return apply(((PluginContext) context), graph, parameters, map);
+
 	}
 
 	public static String apply(PluginContext context,
 			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph,
-			ViewSpecificAttributeMap map, GraphVisualizerParameters parameters) {
+			GraphVisualizerParameters parameters, Map<String, String> map) {
+		return apply(context, graph, new ViewSpecificAttributeMap(), parameters, map);
+
+	}
+
+	public static String apply(UIPluginContext context,
+			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph,
+			ViewSpecificAttributeMap map, Map<String, String> mapL) {
+		return apply(((PluginContext) context), graph, map, mapL);
+	}
+
+	public static String apply(PluginContext context,
+			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph,
+			ViewSpecificAttributeMap map, Map<String, String> mapL) {
+		return apply(context, graph, map, new GraphVisualizerParameters(), mapL);
+	}
+
+	public static String apply(UIPluginContext context,
+			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph,
+			ViewSpecificAttributeMap map, GraphVisualizerParameters parameters, Map<String, String> mapL) {
+		return apply(((PluginContext) context), graph, map, parameters, mapL);
+	}
+
+	public static String apply(PluginContext context,
+			DirectedGraph<? extends DirectedGraphNode, ? extends DirectedGraphEdge<?, ?>> graph,
+			ViewSpecificAttributeMap map, GraphVisualizerParameters parameters, Map<String, String> mapL) {
 		Dot dot = new Dot();
 		Map<DirectedGraphNode, DotNode> nodeMap = new HashMap<DirectedGraphNode, DotNode>();
 		for (DirectedGraphNode node : graph.getNodes()) {
 			DotNode dotNode = dot.addNode(node.getLabel());
 			nodeMap.put(node, dotNode);
-			apply(node, dotNode, map, parameters);
+			apply(node, dotNode, map, parameters, mapL);
 		}
 		for (DirectedGraphEdge<? extends DirectedGraphNode, ? extends DirectedGraphNode> edge : graph.getEdges()) {
 			DotEdge dotEdge = dot.addEdge(nodeMap.get(edge.getSource()), nodeMap.get(edge.getTarget()));
@@ -105,12 +107,15 @@ public class GraphVisualizerAlgorithm {
 	 * node.
 	 */
 	private static void apply(DirectedGraphNode node, DotNode dotNode, ViewSpecificAttributeMap map,
-			GraphVisualizerParameters parameters) {
+			GraphVisualizerParameters parameters, Map<String, String> mapL) {
 		AttributeMap attMap = node.getAttributeMap();
 		Shape shape = getShape(attMap, AttributeMap.SHAPE, null, node, map);
 		String style = "filled";
 		if (shape != null) {
-			if (shape instanceof RoundedRect) {
+			if(node instanceof DataElement) {
+				dotNode.setOption("shape", "hexagon");
+			}
+			else if (shape instanceof RoundedRect) {
 				dotNode.setOption("shape", "box");
 				style = style + ",rounded";
 			} else if (shape instanceof Rectangle) {
@@ -131,6 +136,7 @@ public class GraphVisualizerAlgorithm {
 			dotNode.setOption("style", style);
 		}
 		Boolean showLabel = getBoolean(attMap, AttributeMap.SHOWLABEL, true, node, map);
+		Boolean invisiblePlusGuard = false;
 		// HV: Setting a tooltip seems to have no effect.
 		String label = getString(attMap, AttributeMap.LABEL, "", node, map);
 		String placeLabel = getString(attMap, GVPLACELABEL, "", node, map);
@@ -141,7 +147,12 @@ public class GraphVisualizerAlgorithm {
 		if (showLabel) {
 			dotNode.setLabel(internalLabel);
 		} else {
-			dotNode.setLabel("");
+			if(mapL.get(node.getId().toString()) != null) {
+				dotNode.setLabel(mapL.get(node.getId().toString()));
+				invisiblePlusGuard = true;
+			}
+			else
+				dotNode.setLabel("");
 		}
 		if(node instanceof Gateway) {
 			String image;
@@ -166,6 +177,13 @@ public class GraphVisualizerAlgorithm {
 		Color labelColor = getColor(attMap, AttributeMap.LABELCOLOR, Color.BLACK, node, map);
 		dotNode.setOption("fontcolor", ColourMap.toHexString(labelColor));
 		Color fillColor = getColor(attMap, AttributeMap.FILLCOLOR, Color.WHITE, node, map);
+
+		if(invisiblePlusGuard)
+			dotNode.setOption("fontcolor", ColourMap.toHexString(Color.WHITE));
+		
+		if(node instanceof DataElement)
+			fillColor = Color.LIGHT_GRAY;
+
 		Color gradientColor = getColor(attMap, AttributeMap.GRADIENTCOLOR, fillColor, node, map);
 		if (gradientColor == null || gradientColor.equals(fillColor)) {
 			dotNode.setOption("fillcolor", ColourMap.toHexString(fillColor));

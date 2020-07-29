@@ -493,8 +493,8 @@ public class DPNConverter {
 
             Class<?> varType = convertType(DPNParserConstants.CONTINUOUS);
 
-            DataElement var1 = addNonExistingTimeVarToMap(t1, dpn, varType, false);
-            DataElement var2 = addNonExistingTimeVarToMap(t2, dpn, varType, false);
+            DataElement var1 = getTimeVar(t1, dpn, varType, false);
+            DataElement var2 = getTimeVar(t2, dpn, varType, false);
 
             double time = timeDistance.getTimeData().unitTo(transitionTimeUnitMap.get(t1));
 
@@ -504,10 +504,10 @@ public class DPNConverter {
             String guard2 = String.format(expression, var2, evaluationMode ? "": "'", timeDistance.getIneq(), var1, time, var1);
 
             if(evaluationMode) {
-                String expression2 = "((%s!=null)&&(%s%s(%s+%s)))";
+                String expression2 = "((%s==null)||((%s!=null)&&(%s%s(%s+%s))))";
 
-                String guard3 = String.format(expression2, var2, var1, timeDistance.getOppositeIneq(), var2, time);
-                String guard4 = String.format(expression2, var1, var2, timeDistance.getOppositeIneq(), var1, time);
+                String guard3 = String.format(expression2, var1, var2, var1, timeDistance.getOppositeIneq(), var2, time);
+                String guard4 = String.format(expression2, var2, var1, var2, timeDistance.getOppositeIneq(), var1, time);
 
                 String label = "custom:TimeDistance<|>" + timeDistance.getId() + "<|>";
 
@@ -615,8 +615,8 @@ public class DPNConverter {
             String label = "custom:ConsequenceTimed<|>" + consequenceTimed.getId();
 
             Class<?> varType = convertType(DPNParserConstants.CONTINUOUS);
-            DataElement sourceVar = addNonExistingTimeVarToMap(source, dpn, varType, false);
-            DataElement targetVar = addNonExistingTimeVarToMap(target, dpn, varType, false);
+            DataElement sourceVar = getTimeVar(source, dpn, varType, false);
+            DataElement targetVar = getTimeVar(target, dpn, varType, false);
 
             // aggiungi timeData ad una Map<Transition, List<TimeData>>
             // una volta inseriti tutti determino la timeUnit minore e creo le guardie messe temporaneamente in sospeso
@@ -628,8 +628,8 @@ public class DPNConverter {
                     consequenceTimed.getIneq(), sourceVar, time);
 
             if(evaluationMode) {
-                String expression1 = "((%s!=null)&&(%s%s(%s+%s)))";
-                String guard1 = String.format(expression1, sourceVar, targetVar, consequenceTimed.getOppositeIneq(), sourceVar, time);
+                String expression1 = "((%s==null)||((%s!=null)&&(%s%s(%s+%s))))";
+                String guard1 = String.format(expression1, targetVar, sourceVar, targetVar, consequenceTimed.getOppositeIneq(), sourceVar, time);
 
                 addInvisibleControls(target, dpn, label + "<|>TimeCheck", guard, guard1, true);
             }
@@ -640,7 +640,7 @@ public class DPNConverter {
             // TODO: to obtain better performances find the closest sure meeting point of the path of both source and
             //  target. This should cut down the time to find the optimal path.
             if(consequenceTimed.isForced()) {
-                String guard2 = String.format("((%s==null)||((%s!=null)&&(%s!=null)))", sourceVar, sourceVar, targetVar);
+                String guard2 = String.format("((%s==null)||(%s!=null))", sourceVar, targetVar);
 
                 if(evaluationMode) {
                     String guard3 = String.format("(((%s!=null)&&(%s==null)))", sourceVar, targetVar);
@@ -664,23 +664,21 @@ public class DPNConverter {
             if(t1.equals(t2))
                 return;
 
-            DataElement var = addNonExistingTimeVarToMap(t2, dpn, convertType(DPNParser.CONTINUOUS), false);
+            DataElement var1 = getTimeVar(t1, dpn, convertType(DPNParser.CONTINUOUS), false);
+            DataElement var2 = getTimeVar(t2, dpn, convertType(DPNParser.CONTINUOUS), false);
 
             double time = taskDuration.getTimeData().unitTo(transitionTimeUnitMap.get(t2));
 
             if(evaluationMode) {
-                DataElement var2 = addNonExistingTimeVarToMap(t1, dpn, convertType(DPNParser.CONTINUOUS), true);
-
-                String guard = "(" + var + taskDuration.getIneq() + var2 + "+" + time + ")";
-                String guard1 = "(" + var + taskDuration.getOppositeIneq() + var2 + "+" + time + ")";
+                String guard = "(" + var2 + taskDuration.getIneq() + var1 + "+" + time + ")";
+                String guard1 = "((("+var1+"==null)||("+var2 +"==null))||(" + var2 + taskDuration.getOppositeIneq() + var1 + "+" + time + "))";
 
                 String label = "custom:TaskDuration<|>" + taskDuration.getId();
 
                 addInvisibleControls(t2, dpn, label, guard, guard1, true);
             }
             else {
-                dpn.assignWriteOperation(t1, var);
-                String guard = "(" + var + "'" + taskDuration.getIneq() + var + "+" + time + ")";
+                String guard = "(" + var2 + "'" + taskDuration.getIneq() + var1 + "+" + time + ")";
                 addGuardExpression(dpn, t2, guard);
             }
         }
@@ -693,23 +691,24 @@ public class DPNConverter {
         try {
             Transition transition = getTransition(dpn, timeInstance.getTransition(), timeInstance.getTransitionSide());
 
-            //TODO: consider transition side
-
             transitionTimeUnitMap.putIfAbsent(transition, TimeUnit.MINUTES);
 
             addNonExistingVarToMap(transition, timestampVarMap, dpn, convertType(DPNParserConstants.CONTINUOUS), "TimeInstance");
 
-            double time = (double) timeInstance.getTime() / transitionTimeUnitMap.get(transition).getFactor();
+            double time = (double) timeInstance.getTime() / TimeUnit.DAYS.getFactor();
+
+            DataElement timeVar = timestampVarMap.get(transition);
 
             String expression = "(%s%s%s%s)";
 
             String which = evaluationMode ? "" : "'";
-            String guard = String.format(expression, timestampVarMap.get(transition), which, timeInstance.getPosition(), time);
+            String guard = String.format(expression, timeVar, which, timeInstance.getPosition(), time);
 
             String label = "custom:TimeInstance<|>" + timeInstance.getId();
 
             if(evaluationMode) {
-                String guard1 = String.format(expression, timestampVarMap.get(transition), which, timeInstance.getOpposite(), time);
+                String expression1 = "((%s==null)||(%s%s%s))";
+                String guard1 = String.format(expression1, timeVar, timeVar, timeInstance.getOpposite(), time);
                 addInvisibleControls(transition, dpn, label, guard, guard1, true);
             }
             else {
@@ -729,6 +728,7 @@ public class DPNConverter {
 
         for (Transition transition: rrg.getTransitions()) {
             Transition t1 = transitionsMap.get(transition);
+
             createGuards(dpn, rrg, map, t1);
         }
     }
@@ -737,11 +737,12 @@ public class DPNConverter {
                               Transition t1) {
         ArrayList<Transition> transitions = constraint.getTransitions();
         String guard1, guard2;
+        String prime = evaluationMode ? "" : "'";
         if(transitions.size() == 0) return;
         else if(transitions.size() == 1) {
             if(constraint.getResType() == ResType.INSTANCE) {
-                guard1 = map.get(t1) + "==" + constraint.getName();
-                guard2 = map.get(t1) + "!=" + constraint.getName();
+                guard1 = map.get(t1) + prime + "==" + constraint.getName();
+                guard2 = "(" + map.get(t1) + "==null)||("+map.get(t1) + "!=" + constraint.getName()+")";
             }
             else return;
         }
@@ -749,9 +750,9 @@ public class DPNConverter {
             StringBuilder guard1b = new StringBuilder();
             StringBuilder guard2b = new StringBuilder();
             guard1b.append("(");
-            guard2b.append("(");
+            guard2b.append("((").append(map.get(t1)).append("==null)||");
 
-            String expression = "((%s==null)||(%s%s%s))";
+            String expression = "((%s==null)||(%s%s%s%s))";
             String expression1 = "((%s!=null)&&(%s%s%s))";
 
             boolean first = true;
@@ -767,7 +768,7 @@ public class DPNConverter {
                             guard2b.append("||");
                         }
 
-                        guard1b.append(String.format(expression, map.get(t2), map.get(t1), "==", map.get(t2)));
+                        guard1b.append(String.format(expression, map.get(t2), map.get(t1), prime, "==", map.get(t2)));
                         guard2b.append(String.format(expression1, map.get(t2), map.get(t1), "!=", map.get(t2)));
                     }
                     guard1b.append(")");
@@ -784,14 +785,14 @@ public class DPNConverter {
                             guard2b.append("||");
                         }
 
-                        guard1b.append(String.format(expression, map.get(t2), map.get(t1), "!=", map.get(t2)));
+                        guard1b.append(String.format(expression, map.get(t2), map.get(t1), prime, "!=", map.get(t2)));
                         guard2b.append(String.format(expression1, map.get(t2), map.get(t1), "==", map.get(t2)));
                     }
                     guard1b.append(")");
                     guard2b.append(")");
                     break;
                 case INSTANCE :
-                    guard1b = new StringBuilder(map.get(t1) + "==" + constraint.getName());
+                    guard1b = new StringBuilder(map.get(t1) + prime + "==" + constraint.getName());
                     guard2b = new StringBuilder(map.get(t1) + "!=" + constraint.getName());
                     break;
                 default :
@@ -890,12 +891,6 @@ public class DPNConverter {
         addGuardExpression(dpn, tw, guard2);
     }
 
-//    private void putIfAbsent(Transition t, String position) {
-//        if(!modelPositions.containsEntry(t, position))
-//            modelPositions.put(t, position);
-//
-//    }
-
     private Transition getTransition(DataPetriNet dpn, Transition t, Side side) throws MissingTransitionSideException {
         Transition t1;
         if(side.equals(Side.START)) {
@@ -967,7 +962,7 @@ public class DPNConverter {
         return newString.toString();
     }
 
-    DataElement addNonExistingTimeVarToMap(Transition t, DataPetriNet dpn, Class<?> varType, boolean forceNew) {
+    private DataElement getTimeVar(Transition t, DataPetriNet dpn, Class<?> varType, boolean forceNew) {
         String varName = "custom:" + normalize(t.getLabel()) + "_TimeVar";
         if(forceNew) {
             Integer index = varNameCounter.get(varName);
@@ -977,23 +972,28 @@ public class DPNConverter {
             varNameCounter.put(varName, index+1);
             varName += "_" + index;
         }
-//        String varName = prefix + "_" + t.getLabel().replaceAll(" ", "_") + "_" + timeUnit.toString();
-//        String uniqueVarName = getUniqueVarName(varName);
-        if (!relTimeVarMap.containsEntry(t, varName)) {
-            DataElement var = dpn.addVariable(varName, varType, null, null);
-            dpn.assignWriteOperation(t, var);
-//            dpn.assignReadOperation(t, var);
-//            relTimeUnitMap.put(var, timeData);
-            relTimeVarMap.put(t, var);
-            return var;
-        }
-        else {
-            for (DataElement element: relTimeVarMap.get(t))
-                if (element.getVarName().equals(varName))
-                    return element;
 
-            return null;
-        }
+        for (DataElement element: relTimeVarMap.get(t))
+            if (element.getVarName().equals(varName))
+                return element;
+
+        DataElement var = dpn.addVariable(varName, varType, null, null);
+        dpn.assignWriteOperation(t, var);
+        relTimeVarMap.put(t, var);
+        return var;
+//        if (!relTimeVarMap.containsEntry(t, varName)) {
+//            DataElement var = dpn.addVariable(varName, varType, null, null);
+//            dpn.assignWriteOperation(t, var);
+//            relTimeVarMap.put(t, var);
+//            return var;
+//        }
+//        else {
+//            for (DataElement element: relTimeVarMap.get(t))
+//                if (element.getVarName().equals(varName))
+//                    return element;
+//
+//            return null;
+//        }
 
     }
 
@@ -1006,6 +1006,16 @@ public class DPNConverter {
             map.put(t, var);
         }
     }
+
+//    private void addRRGVarToMap(Transition t, BiMap<Transition, DataElement> map,
+//                                DataPetriNet dpn, String prefix) {
+//        String varName = "custom-" + prefix + "_" + t.getLabel().replaceAll(" ", "_");
+//        if (!map.containsKey(t)) {
+//            DataElement var = dpn.addVariable(varName, convertType(DPNParserConstants.LITERAL), null, null);
+//            dpn.assignWriteOperation(t, var);
+//            map.put(t, var);
+//        }
+//    }
 
     private static Class<?> convertType(int type) {
         switch (type) {
@@ -1061,7 +1071,7 @@ public class DPNConverter {
 
             // time instances
             if (timestampVarMap.containsKey(t)) {
-                double diff = (double) (eventDate.getTime() - first.getTime()) / transitionTimeUnitMap.get(t).getFactor();
+                double diff = (double) (eventDate.getTime()) / TimeUnit.DAYS.getFactor();
                 setContinuousAttr(event, timestampVarMap.get(t).getVarName(), diff);
 //                setDateAttr(event, timestampVarMap.get(t).getVarName(), XUtils.getTimestamp(event));
             }

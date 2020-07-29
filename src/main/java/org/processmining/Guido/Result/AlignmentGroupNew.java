@@ -5,6 +5,8 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.Iterators;
 import org.deckfour.xes.model.XAttribute;
 import org.deckfour.xes.model.impl.XAttributeLiteralImpl;
+import org.processmining.Guido.CustomElements.ConsequenceTimed;
+import org.processmining.Guido.CustomElements.CustomElements;
 import org.processmining.Guido.converters.DPNDataSettings;
 import org.processmining.Guido.utils.Utils;
 import org.processmining.framework.util.ui.widgets.traceview.ProMTraceView;
@@ -153,6 +155,10 @@ public class AlignmentGroupNew implements GroupedAlignments.AlignmentGroup {
             return incorrectVariables;
         }
 
+        public boolean hasVariableErrors() {
+            return missingVariables != null || incorrectVariables != null;
+        }
+
         @Override
         public boolean equals(Object o) {
             if (this == o) return true;
@@ -181,10 +187,10 @@ public class AlignmentGroupNew implements GroupedAlignments.AlignmentGroup {
 
     private List<AlignmentGroupStep> stepsList;
 
-    private List<ConstraintResult> constraintResults;
+    private List<ConstraintSingleResult> constraintResults;
 
     public AlignmentGroupNew(XAlignment a, GroupedAlignments<XAlignment> groupedAlignments,
-                             final Map<String, Color> activityColorMap, boolean evaluationMode) {
+                             final Map<String, Color> activityColorMap, boolean evaluationMode, CustomElements ce) {
         this.alignment = a;
         this.groupedAlignments = groupedAlignments;
         this.stepsList = new ArrayList<>();
@@ -206,10 +212,8 @@ public class AlignmentGroupNew implements GroupedAlignments.AlignmentGroup {
             stepsList.add(new AlignmentGroupStep((XDataAlignmentMove) move, activityColorMap));
         }
 
-        // TODO: change the parsing of the strings depending on the constraint
         for(Map.Entry<String, List<String>> entry : constraintToResults.entrySet()) {
             String type = null;
-            List<String> transitions = new ArrayList<>();
             boolean result = true;
             List<String> details  = new ArrayList<>();
 
@@ -221,7 +225,6 @@ public class AlignmentGroupNew implements GroupedAlignments.AlignmentGroup {
                         type.equals("Role") || type.equals("Group")) {
                     if(data[3].equals("Wrong")) result = false;
 
-                    transitions.add(data[2]);
                     details.add("Guard on " + data[2] + " was " + data[3]);
                 }
                 else {
@@ -229,7 +232,17 @@ public class AlignmentGroupNew implements GroupedAlignments.AlignmentGroup {
                 }
             }
 
-            constraintResults.add(new ConstraintResult(type, entry.getKey(), transitions, result, details));
+            if(type == null) continue;
+            else if(type.equals("TimeDistance") || type.equals("Resource") || type.equals("Role") ||
+                    type.equals("Group")) {
+                if(details.size() < 2 && result) continue;
+            }
+            else if(type.equals("ConsequenceTimed")) {
+                if(((ConsequenceTimed) ce.getConstraint(entry.getKey())).isForced() && details.size() < 2 && result)
+                    continue;
+            }
+
+            constraintResults.add(new ConstraintSingleResult(ce.getConstraint(entry.getKey()), type, entry.getKey(), result, details));
         }
     }
 
@@ -269,7 +282,23 @@ public class AlignmentGroupNew implements GroupedAlignments.AlignmentGroup {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         AlignmentGroupNew groupNew = (AlignmentGroupNew) o;
-        return stepsList.equals(groupNew.stepsList) && constraintResults.equals(groupNew.constraintResults);
+        return confrontSteps(groupNew.stepsList) && constraintResults.equals(groupNew.constraintResults);
+    }
+
+    private boolean confrontSteps(List<AlignmentGroupStep> otherSteps) {
+        List<AlignmentGroupStep> newSteps = new ArrayList<>();
+        for(AlignmentGroupStep step : stepsList) {
+            if(!step.isInvisible() || step.hasVariableErrors())
+                newSteps.add(step);
+        }
+
+        List<AlignmentGroupStep> newOtherSteps = new ArrayList<>();
+        for(AlignmentGroupStep step : otherSteps) {
+            if(!step.isInvisible() || step.hasVariableErrors())
+                newOtherSteps.add(step);
+        }
+
+        return newSteps.equals(newOtherSteps);
     }
 
     @Override

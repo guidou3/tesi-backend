@@ -12,6 +12,11 @@ public class Role extends AbstractRRG {
     private ArrayList<Transition> transitionsRef;
     private ResType resType;
 
+    public Role(Role role) {
+        this.transitions = role.transitions;
+        this.resType = role.resType;
+    }
+
     public void initialize(Map<String, Transition> id2transition, Map<String, String> id2NewId) {
         transitionsRef = new ArrayList<>();
         for(String id : transitions) {

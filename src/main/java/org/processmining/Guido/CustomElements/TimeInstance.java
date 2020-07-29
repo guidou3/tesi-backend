@@ -16,6 +16,13 @@ public class TimeInstance extends Constraint {
     private String task;
     private Transition taskRef;
 
+    public TimeInstance(TimeInstance timeInstance) {
+        this.transitionSide = timeInstance.transitionSide;
+        this.side = timeInstance.side;
+        this.timestamp = timeInstance.timestamp;
+        this.task = timeInstance.task;
+    }
+
     public void initialize(Map<String, Transition> id2transition, Map<String, String> id2NewId) {
         taskRef = id2transition.get(id2NewId.get(task));
     }

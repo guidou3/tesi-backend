@@ -143,17 +143,17 @@ public class DataPetriNetWithCustomElements extends PetriNetWithData {
     }
 
     public void print() {
-        System.out.println("\nRead operations: ("+ readOperations.size()  +")");
-        for (PairTransitionDataElement item : readOperations) {
-            System.out.println(item.getTransition().getLabel() + "\t\t" + item.getDataElement().getVarName());
-        }
-        System.out.println("\nWrite operations: ("+ writeOperations.size()  +")");
-        for (PairTransitionDataElement item : writeOperations) {
-            System.out.println(item.getTransition().getLabel() + "\t\t" + item.getDataElement().getVarName());
-        }
+//        System.out.println("\nRead operations: ("+ readOperations.size()  +")");
+//        for (PairTransitionDataElement item : readOperations) {
+//            System.out.println(item.getTransition().getLabel() + "\t\t" + item.getDataElement().getVarName());
+//        }
+//        System.out.println("\nWrite operations: ("+ writeOperations.size()  +")");
+//        for (PairTransitionDataElement item : writeOperations) {
+//            System.out.println(item.getTransition().getLabel() + "\t\t" + item.getDataElement().getVarName());
+//        }
         System.out.println("\nGuards: ("+ guardsMap.size()  +")");
         for (Map.Entry<Transition, String> item : guardsMap.entrySet()) {
-            System.out.println(item.getKey().getLabel() + "\t\t" + item.getKey().getId() + "\t\t" + item.getValue());
+            System.out.println(item.getKey().getLabel() + "\t\t" + "\t\t" + item.getValue());
         }
     }
 

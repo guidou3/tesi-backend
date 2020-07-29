@@ -92,7 +92,7 @@ public class Utils {
 
         @Override
         public int hashCode() {
-            return Objects.hash(_1, _2);
+            return Objects.hash(_1);
         }
     }
 }

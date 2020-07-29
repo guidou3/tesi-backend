@@ -12,6 +12,12 @@ public class TaskDuration extends Constraint {
     private String task;
     private Transition taskRef;
 
+    public TaskDuration(TaskDuration duration) {
+        this.timeData = duration.timeData;
+        this.ineq = duration.ineq;
+        this.task = duration.task;
+    }
+
     public void initialize(Map<String, Transition> id2transition, Map<String, String> id2NewId) {
         taskRef = id2transition.get(id2NewId.get(task));
     }

@@ -32,17 +32,6 @@
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-			<exclusions>
-				<exclusion>
-					<groupId>org.junit.vintage</groupId>
-					<artifactId>junit-vintage-engine</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-web</artifactId>
 			<exclusions>
 				<exclusion>
@@ -106,6 +95,203 @@
             <artifactId>javax.inject</artifactId>
             <version>1</version>
         </dependency>
+
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>org.processmining.bpmn</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/BPMN-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>org.processmining.bpmnconverters</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/BPMNConversions-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>org.processmining.dataawarereplayer</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/DataAwareReplayer-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>org.processmining.dataawarereplayerlgpl</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/DataAwareReplayerLGPL-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>org.processmining.dpn</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/DataPetriNets-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>org.processmining.dpnlgpl</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/DataPetriNetsLGPL-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>org.processmining.framework</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/ProM-Framework-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.deckfour</groupId>
+			<artifactId>org.deckfour.xes</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/OpenXES-20181205.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>org.processmining.log</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/Log-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>AcceptingPetriNet</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/AcceptingPetriNet-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>DataExpression</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/DataExpression-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>ProM-Plugins</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/ProM-Plugins.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>simmetrics</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/simmetrics-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>BasicUtils</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/BasicUtils-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>LpSolve</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/LpSolve-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>PetriNets</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/PetriNets-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>GraphViz</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/GraphViz-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>PNetReplayer</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/PNetReplayer-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>ProM-Contexts</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/ProM-Contexts-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>ProM-Models</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/ProM-Models-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>CausalActivityGraph</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/CausalActivityGraph-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>EfficientStorage</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/EfficientStorage-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>Widgets</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/Widgets-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>jgraph</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/jgraph-5.13.0.4.jar  </systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>trove4j-3</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/trove4j-3.0.3.jar  </systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>ActivityClusterArray</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/ActivityClusterArray-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>Fuzzy</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/Fuzzy-latest.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
+			<artifactId>TransitionSystems</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/TransitionSystems-latest.jar</systemPath>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -113,6 +299,17 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<includeSystemScope>true</includeSystemScope>
+					<mainClass>org.processmining.Guido.server.DemoApplication</mainClass>
+				</configuration>
+				<executions>
+					<execution>
+						<goals>
+							<goal>repackage</goal>
+						</goals>
+					</execution>
+				</executions>
 			</plugin>
 		</plugins>
 	</build>

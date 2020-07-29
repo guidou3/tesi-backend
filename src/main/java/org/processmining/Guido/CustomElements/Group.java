@@ -12,6 +12,11 @@ public class Group extends AbstractRRG {
     private ArrayList<Transition> transitionsRef;
     private ResType resType;
 
+    public Group(Group group) {
+        this.transitions = group.transitions;
+        this.resType = group.resType;
+    }
+
     public void initialize(Map<String, Transition> id2transition, Map<String, String> id2NewId) {
         transitionsRef = new ArrayList<>();
         for(String id : transitions) {

@@ -9,6 +9,17 @@ public class ConsequenceTimed extends Consequence {
     private Ineq ineq;
     private boolean forced;
 
+    public ConsequenceTimed() {
+
+    }
+
+    public ConsequenceTimed(ConsequenceTimed consequence) {
+        super(consequence);
+        this.timeData = consequence.timeData;
+        this.ineq = consequence.ineq;
+        this.forced = consequence.forced;
+    }
+
     public float getTime() {
         return timeData.getTime();
     }

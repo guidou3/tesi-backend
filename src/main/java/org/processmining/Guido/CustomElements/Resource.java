@@ -13,6 +13,11 @@ public class Resource extends AbstractRRG {
     private ArrayList<Transition> transitionsRef;
     private ResType resType;
 
+    public Resource(Resource res) {
+        this.transitions = res.transitions;
+        this.resType = res.resType;
+    }
+
     public void initialize(Map<String, Transition> id2transition, Map<String, String> id2NewId) {
         transitionsRef = new ArrayList<>();
         for(String id : transitions) {

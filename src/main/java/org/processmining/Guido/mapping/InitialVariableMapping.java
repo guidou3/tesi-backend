@@ -49,6 +49,16 @@ public class InitialVariableMapping {
         for(String s : new TreeSet<>(coll1)) {
             if(s.startsWith("custom:"))
                 mapping.put(s, s); // custom variable automatically created, it is useless to check
+//            else if(s.startsWith("custom-")) {
+//                if(s.startsWith("Resource", 7) && internalSet.contains("org:resource"))
+//                    mapping.put(s, "org:resource");
+//                else if(s.startsWith("Role", 7) && internalSet.contains("org:role"))
+//                    mapping.put(s, "org:role");
+//                else if(s.startsWith("Group", 7) && internalSet.contains("org:group"))
+//                    mapping.put(s, "org:group");
+//                else
+//                    mapping.put(s, "");
+//            }
             else {
                 NameValue pair = getBestMatch(s, internalSet);
                 String match = "";

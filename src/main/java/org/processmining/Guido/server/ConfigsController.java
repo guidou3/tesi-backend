@@ -6,11 +6,13 @@ import org.processmining.Guido.DataAwareConformanceChecking.Configs;
 import org.processmining.Guido.DataAwareConformanceChecking.ControlFlowCost;
 import org.processmining.Guido.DataAwareConformanceChecking.VariableMatchCostImporter;
 import org.processmining.Guido.InOut.ControlFlowViolationCosts;
+import org.processmining.Guido.InOut.Graph;
 import org.processmining.Guido.InOut.VariableBoundsEntry;
 import org.processmining.Guido.InOut.VariableMatchCostEntry;
 import org.processmining.Guido.Result.AlignmentGroupResult;
 import org.processmining.Guido.Result.GroupOutput;
 import org.processmining.Guido.mapping.*;
+import org.processmining.framework.plugin.Progress;
 import org.processmining.graphvisualizers.plugins.GraphVisualizerPlugin;
 import org.processmining.plugins.DataConformance.visualization.grouping.GroupedAlignments;
 import org.processmining.plugins.balancedconformance.result.BalancedReplayResult;
@@ -174,7 +176,11 @@ public class ConfigsController {
     @GetMapping("/queryConfiguration")
     public ResponseEntity<String> queryConfiguration() {
         try {
-            cc.queryConfiguration();
+            if(Database.hasStarted()) {
+                // do nothing
+            }
+            else
+                cc.queryConfiguration();
 
             return ResponseEntity.status(HttpStatus.OK).body("Operation ended without errors");
         } catch (Exception e) {
@@ -186,9 +192,28 @@ public class ConfigsController {
     @GetMapping("/balancedDataConformance")
     public ResponseEntity<String> balancedDataConformance() {
         try {
-            cc.dobBlancedDataConformance();
+            if(Database.hasStarted()) {
+                // do nothing
+            }
+            else {
+                Database.setStarted(true);
+                cc.dobBlancedDataConformance();
+            }
 
-            return ResponseEntity.status(HttpStatus.OK).body("DONE");
+            return ResponseEntity.status(HttpStatus.OK).body("WAITING");
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(null);
+        }
+    }
+
+    @GetMapping("/progress")
+    public ResponseEntity<Object[]> getProgress() {
+        try {
+            Object[] data = cc.getProgress();
+            if((boolean) data[1])
+                Database.setStarted(false);
+            return ResponseEntity.status(HttpStatus.OK).body(cc.getProgress());
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body(null);
@@ -216,7 +241,7 @@ public class ConfigsController {
     }
 
     @GetMapping("/dotInitial")
-    public ResponseEntity<String> dotInitial() {
+    public ResponseEntity<Graph> dotInitial() {
         try {
             return ResponseEntity.status(HttpStatus.OK).body(cc.renderDot(0));
         } catch (Exception e) {
@@ -226,7 +251,7 @@ public class ConfigsController {
     }
 
     @GetMapping("/dotCustom")
-    public ResponseEntity<String> dotCustom() {
+    public ResponseEntity<Graph> dotCustom() {
         try {
             return ResponseEntity.status(HttpStatus.OK).body(cc.renderDot(1));
         } catch (Exception e) {
@@ -236,7 +261,7 @@ public class ConfigsController {
     }
 
     @GetMapping("/dotFinal")
-    public ResponseEntity<String> dotFinal() {
+    public ResponseEntity<Graph> dotFinal() {
         try {
             return ResponseEntity.status(HttpStatus.OK).body(cc.renderDot(2));
         } catch (Exception e) {

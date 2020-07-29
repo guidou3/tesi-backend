@@ -13,6 +13,13 @@ public class CustomConnection extends Constraint implements Serializable {
     private Transition sourceRef;
     private Transition targetRef;
 
+    public CustomConnection() {}
+
+    public CustomConnection(CustomConnection customConnection) {
+        this.source = customConnection.source;
+        this.target = customConnection.target;
+    }
+
     public void initialize(Map<String, Transition> id2transition, Map<String, String> id2NewId) {
         sourceRef = id2transition.get(id2NewId.get(source));
         targetRef = id2transition.get(id2NewId.get(target));

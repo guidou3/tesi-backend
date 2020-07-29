@@ -40,18 +40,19 @@ import java.awt.image.BufferedImage;
 import java.awt.image.ImageObserver;
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 public class GraphVisualizerPlugin extends GraphVisualizerAlgorithm {
 
-	public static String runUI(PluginContext context, DataPetriNet net) {
-		return runUI(context, net, new GraphVisualizerParameters());
+	public static String runUI(PluginContext context, DataPetriNet net, Map<String, String> map) {
+		return runUI(context, net, new GraphVisualizerParameters(), map);
 	}
 
-	public static String runUI(PluginContext context, BPMNDiagram net) {
-		return runUI(context, net, new GraphVisualizerParameters());
+	public static String runUI(PluginContext context, BPMNDiagram net, Map<String, String> map) {
+		return runUI(context, net, new GraphVisualizerParameters(), map);
 	}
 
-	private static String runUI(PluginContext context, PetrinetGraph graph, GraphVisualizerParameters parameters) {
+	private static String runUI(PluginContext context, PetrinetGraph graph, GraphVisualizerParameters parameters, Map<String, String> mapL) {
 		if (graph instanceof Petrinet) {
 			/*
 			 * It's a proper Petri net. Get a hold on the view specific
@@ -68,12 +69,12 @@ public class GraphVisualizerPlugin extends GraphVisualizerAlgorithm {
 			/*
 			 * Got it. Now create the dot panel.
 			 */
-			return apply(context, graph, map, parameters);
+			return apply(context, graph, map, parameters, mapL);
 		}
-		return apply(context, graph, parameters);
+		return apply(context, graph, parameters, mapL);
 	}
 
-	private static String runUI(PluginContext context, BPMNDiagram graph, GraphVisualizerParameters parameters) {
+	private static String runUI(PluginContext context, BPMNDiagram graph, GraphVisualizerParameters parameters, Map<String, String> mapL) {
 
 //		ProMJGraphPanel panel = (ProMJGraphPanel) BPMNVisualization.visualize(context, (BPMNDiagram) graph.getGraph());
 //		ProMJGraphPanel panel = ProMJGraphVisualizer.instance().visualizeGraph(context, graph);
@@ -95,10 +96,10 @@ public class GraphVisualizerPlugin extends GraphVisualizerAlgorithm {
 		/*
 		 * Got it. Now create the dot panel.
 		 */
-		return apply(context, jGraph.getProMGraph(), map, parameters);
+		return apply(context, jGraph.getProMGraph(), map, parameters, mapL);
 	}
 
-	public static String runUI(PluginContext context, TransitionSystem graph) {
+	public static String runUI(PluginContext context, TransitionSystem graph, Map<String, String> mapL) {
 		/*
 		 * Get a hold on the view specific attributes.
 		 */
@@ -108,10 +109,10 @@ public class GraphVisualizerPlugin extends GraphVisualizerAlgorithm {
 		/*
 		 * Got it. Now create the dot panel.
 		 */
-		return apply(context, graph, map);
+		return apply(context, graph, map, mapL);
 	}
 
-	public static String runUI(PluginContext context, AcceptingPetriNet graph) {
+	public static String runUI(PluginContext context, AcceptingPetriNet graph, Map<String, String> mapL) {
 		/*
 		 * Get a hold on the view specific attributes.
 		 */
@@ -121,19 +122,19 @@ public class GraphVisualizerPlugin extends GraphVisualizerAlgorithm {
 		/*
 		 * Got it. Now create the dot panel.
 		 */
-		return apply(context, graph.getNet(), map);
+		return apply(context, graph.getNet(), map, mapL);
 	}
 
-	public static String runUI(PluginContext context, ActivityClusterArray clusters) {
-		return apply(context, new ActivityClusterArrayGraph(context, clusters));
+	public static String runUI(PluginContext context, ActivityClusterArray clusters, Map<String, String> map) {
+		return apply(context, new ActivityClusterArrayGraph(context, clusters), map);
 	}
 
-	public static String runUI(PluginContext context, CausalActivityGraph graph) {
-		return apply(context, new CausalActivityGraphGraph(context, graph));
+	public static String runUI(PluginContext context, CausalActivityGraph graph, Map<String, String> map) {
+		return apply(context, new CausalActivityGraphGraph(context, graph), map);
 	}
 
-	public static String runUI(PluginContext context, MutableFuzzyGraph graph) {
-		return apply(context, graph);
+	public static String runUI(PluginContext context, MutableFuzzyGraph graph, Map<String, String> map) {
+		return apply(context, graph, map);
 	}
 
 }

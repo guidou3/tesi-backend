@@ -11,6 +11,7 @@ import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -18,9 +19,9 @@ import java.util.List;
 @Controller
 public class FileUploader {
 
-    private final Path modelLocation = Paths.get("./data/models");
-    private final Path customElementsLocation = Paths.get("./data/customElements");
-    private final Path logLocation = Paths.get("./data/logs");
+    private final Path modelLocation = Paths.get("./data");
+    private final Path customElementsLocation = Paths.get("./data");
+    private final Path logLocation = Paths.get("./data");
 
     ConformanceChecker cc = Database.getConformanceChecker();
 
@@ -28,14 +29,12 @@ public class FileUploader {
     public ResponseEntity<String> uploadModel(@RequestParam("file") MultipartFile file) {
         try {
             try {
-                Files.copy(file.getInputStream(), this.modelLocation.resolve(file.getOriginalFilename()));
+                Files.copy(file.getInputStream(), this.modelLocation.resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
             } catch (Exception e) {
                 throw new RuntimeException("FAIL!");
             }
-            File model = new File(modelLocation + file.getOriginalFilename());
+            File model = new File(String.valueOf(this.modelLocation.resolve(file.getOriginalFilename())));
 
-            //TODO: change dpn with bpmn
-//            cc.setModelDpn(model);
             cc.setModelBpmn(model);
 
             return ResponseEntity.status(HttpStatus.OK).body("Successfully uploaded!");
@@ -48,11 +47,11 @@ public class FileUploader {
     public ResponseEntity<String> uploadCustomElements(@RequestParam("file") MultipartFile file) {
         try {
             try {
-                Files.copy(file.getInputStream(), this.customElementsLocation.resolve(file.getOriginalFilename()));
+                Files.copy(file.getInputStream(), this.customElementsLocation.resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
             } catch (Exception e) {
                 throw new RuntimeException("FAIL!");
             }
-            File customElements = new File(customElementsLocation + file.getOriginalFilename());
+            File customElements = new File(String.valueOf(this.customElementsLocation.resolve(file.getOriginalFilename())));
             cc.setCustomElements(customElements);
 
             return ResponseEntity.status(HttpStatus.OK).body("Successfully uploaded!");
@@ -65,11 +64,11 @@ public class FileUploader {
     public ResponseEntity<String> uploadLog(@RequestParam("file") MultipartFile file) {
         try {
             try {
-                Files.copy(file.getInputStream(), this.logLocation.resolve(file.getOriginalFilename()));
+                Files.copy(file.getInputStream(), this.logLocation.resolve(file.getOriginalFilename()), StandardCopyOption.REPLACE_EXISTING);
             } catch (Exception e) {
                 throw new RuntimeException("FAIL!");
             }
-            File log = new File(logLocation + file.getOriginalFilename());
+            File log = new File(String.valueOf(this.logLocation.resolve(file.getOriginalFilename())));
             cc.setLog(log);
 
             return ResponseEntity.status(HttpStatus.OK).body("Successfully uploaded!");

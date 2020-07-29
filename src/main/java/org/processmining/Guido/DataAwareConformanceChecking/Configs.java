@@ -31,6 +31,7 @@ public class Configs {
     private boolean checked;
     private boolean evaluation;
     private double fitness;
+    private boolean forced;
     private boolean keep_control;
     private boolean keep_data;
     private String milp;
@@ -43,7 +44,7 @@ public class Configs {
     int threads;
     private String unassigned;
 
-    public Configs(String algorithm, boolean balanced, boolean cache, boolean checked, boolean evaluation, Double fitness,
+    public Configs(String algorithm, boolean balanced, boolean cache, boolean checked, boolean evaluation, Double fitness, boolean forced,
                    boolean keep_control, boolean keep_data, String milp, String moves_ordering, boolean optimization,
                    boolean partialOrder, String queueing, int search_space, boolean startComplete, int threads,
                    String unassigned) {
@@ -52,6 +53,7 @@ public class Configs {
         this.cache = cache;
         this.checked = checked;
         this.evaluation = evaluation;
+        this.forced = forced;
         this.fitness = fitness;
         this.keep_control = keep_control;
         this.keep_data = keep_data;
@@ -90,6 +92,7 @@ public class Configs {
         config.setMaxQueuedStates(getMaxQueuedStates());
         config.setEvaluationMode(evaluation);
         config.setStartComplete(startComplete);
+        config.setEvaluationForced(forced);
         return config;
     }
 }

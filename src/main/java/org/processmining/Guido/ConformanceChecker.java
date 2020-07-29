@@ -2,6 +2,7 @@ package org.processmining.Guido;
 
 import com.google.common.base.Function;
 import com.google.common.collect.*;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import org.deckfour.xes.classification.*;
 import org.deckfour.xes.extension.std.XConceptExtension;
@@ -14,10 +15,7 @@ import org.deckfour.xes.out.XesXmlSerializer;
 import org.jsoup.Jsoup;
 import org.processmining.Guido.CustomElements.*;
 import org.processmining.Guido.DataAwareConformanceChecking.*;
-import org.processmining.Guido.InOut.ControlFlowViolationCosts;
-import org.processmining.Guido.InOut.PnmlExporter;
-import org.processmining.Guido.InOut.VariableBoundsEntry;
-import org.processmining.Guido.InOut.VariableMatchCostEntry;
+import org.processmining.Guido.InOut.*;
 import org.processmining.Guido.Result.ActivityGraphDetails;
 import org.processmining.Guido.Result.AlignmentGroupNew;
 import org.processmining.Guido.Result.AlignmentGroupResult;
@@ -25,6 +23,7 @@ import org.processmining.Guido.Result.GroupOutput;
 import org.processmining.Guido.converters.*;
 import org.processmining.Guido.importers.*;
 import org.processmining.Guido.mapping.*;
+import org.processmining.Guido.utils.Utils;
 import org.processmining.contexts.uitopia.DummyUIPluginContext;
 import org.processmining.contexts.uitopia.UIPluginContext;
 import org.processmining.datapetrinets.DataPetriNet;
@@ -93,6 +92,8 @@ public class ConformanceChecker {
     private XLog customLog;
     private CustomElements customElements;
 
+    private List<DiagramItem> diagram;
+
     private DummyUIPluginContext context;
 
     private DPNConverter dpnConverter;
@@ -112,6 +113,8 @@ public class ConformanceChecker {
         context = new DummyUIPluginContext();
 
         activityTransitionMapping = new ActivityTransitionMapping();
+
+        hasCustomElements = false;
     }
 
     public ConformanceChecker(boolean bool) {
@@ -119,11 +122,13 @@ public class ConformanceChecker {
         try {
             hasCustomElements = bool;
 
-            setModelBpmn("./data/models/prova.bpmn");
-            setLog("./data/logs/road_fines_with_remaining_amount_variable.xes.gz");
-            setCustomElements("./data/customElements/customElements.cbpmn");
+            setModelBpmn("./data/prova.bpmn");
+            setLog("./data/road_fines_with_remaining_amount_variable.xes.gz");
+            setCustomElements("./data/customElements.cbpmn");
 
-            convertBpmnToDpn();
+//            extractTraceCases();
+
+//            convertBpmnToDpn();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -142,6 +147,8 @@ public class ConformanceChecker {
 
         modelBpmn = bpmnImporter.bpmnToDiagram();
         activityTransitionMapping.firstStep(bpmnImporter.getMap());
+
+        convertBpmnToDpn();
     }
 
     public void setLog(String s) throws Exception {
@@ -188,6 +195,25 @@ public class ConformanceChecker {
         net.setTransitionLogPositions(logPositions.asMap());
     }
 
+    public void extractTraceCases() {
+        Map<Integer, Integer> traceCases = new HashMap<>();
+
+        for (XTrace oldTrace : log) {
+            int n = 0;
+            for (XEvent event : oldTrace) {
+                n++;
+            }
+
+            if(traceCases.get(n) != null)
+                traceCases.put(n, traceCases.get(n)+1);
+            else
+                traceCases.put(n, 1);
+        }
+
+        for(Map.Entry<Integer, Integer> entry : traceCases.entrySet())
+            System.out.println(entry.getKey() + " " + entry.getValue());
+    }
+
     public void setCustomElements(String s) {
         setCustomElements(new File(s));
     }
@@ -195,6 +221,12 @@ public class ConformanceChecker {
     public void setCustomElements(File ce) {
         customElementsFile = ce;
         customElements = JsonImporter.importJson(ce);
+
+        hasCustomElements = true;
+    }
+
+    public void exportCustomElements() {
+        Gson gson = new Gson();
     }
 
     public void initializeCustomElements() {
@@ -265,26 +297,34 @@ public class ConformanceChecker {
 
         if(hasCustomElements) {
             extractLogPositions();
-            exportDpn(net, "prova1.pnml");
+            exportDpn(net, "net.pnml");
 
             initializeCustomElements();
 
             customDpnConversion();
+            exportDpn(customNet, "customNet.pnml");
 
 //            CyclesFinder cf = new CyclesFinder(net);
 //            cf.findCycles();
 
             updateFinalMapping1();
             convertLog();
-//            exportLog();
+//            exportLog("customlog.xes");
 
             updateFinalMapping2();
+
+        }
+        else {
+            customNet = net;
+            customLog = log;
         }
 
-        String logName = XConceptExtension.instance().extractName(customLog);
-        String label = "Connection between " + customNet.getLabel() + " and " + (logName != null ? logName : "unnamed log");
-        EvClassLogPetrinetConnection con = new EvClassLogPetrinetConnection(label, customNet, customLog, finalMapping.getClassifier(), finalMapping.getMap());
-        context.addConnection(con);
+        addConnection(customNet, customLog);
+
+//        String logName = XConceptExtension.instance().extractName(customLog);
+//        String label = "Connection between " + customNet.getLabel() + " and " + (logName != null ? logName : "unnamed log");
+//        EvClassLogPetrinetConnection con = new EvClassLogPetrinetConnection(label, customNet, customLog, finalMapping.getClassifier(), finalMapping.getMap());
+//        context.addConnection(con);
 
     }
 
@@ -367,7 +407,7 @@ public class ConformanceChecker {
 
     // only if !net.getVariables().isEmpty()
     public void postVariableMatchCost(List<VariableMatchCostEntry> entries) {
-        matchCostImporter.setTable(entries);
+        matchCostImporter.setTable(entries, config.isEvaluationMode(), config.isEvaluationForced());
         config.setVariableCost(matchCostImporter.getCosts());
     }
 
@@ -378,7 +418,6 @@ public class ConformanceChecker {
 
     // only if !net.getVariables().isEmpty()
     public void postVariableBounds(List<VariableBoundsEntry> list) {
-//        Configs.VariableBounds variableBounds = queryVariableBounds(context, net, log, config.getVariableMapping());
         CheckVariableBoundsImporter importer = new CheckVariableBoundsImporter(list);
 
         Map<String, Object> upperBounds = new HashMap<>();
@@ -387,7 +426,6 @@ public class ConformanceChecker {
 
         customNet.fixDataElementsTypes(dataElements);
         exportDpn(customNet, "prova2.pnml");
-//        fixDataElements(dataElements);
 
         for (DataElement elem : dataElements) {
             Object value = elem.getMinValue();
@@ -419,9 +457,17 @@ public class ConformanceChecker {
 
     }
 
-    public Progress dobBlancedDataConformance() throws ControlFlowAlignmentException, DataAlignmentException {
+    public void dobBlancedDataConformance() throws ControlFlowAlignmentException, DataAlignmentException {
         result = new BalancedDataConformance().balancedAlignmentPluginHeadless(context, customNet, customLog, config);
-        return context.getProgress();
+//        return context.getProgress();
+    }
+
+    public Object[] getProgress() {
+        Object[] data = new Object[2];
+        Progress progress = context.getProgress();
+        data[0] = (double) progress.getValue() * 100 / progress.getMaximum();
+        data[1] = (result != null);
+        return data;
     }
 
     public AlignmentGroupResult getGroups() {
@@ -435,7 +481,7 @@ public class ConformanceChecker {
         // crea funzione di grouping (mi serve per poter utilizzare AlignmentGroupNew come definizione dei gruppi)
         Map<String, Color> activityColorMap = createColorMap(xAlignments);
         GroupingFunction<XAlignment, AlignmentGroup> function = (a, groupedAlignments) ->
-                new AlignmentGroupNew(a, groupedAlignments, activityColorMap, config.isEvaluationMode());
+                new AlignmentGroupNew(a, groupedAlignments, activityColorMap, config.isEvaluationMode(), customElements);
 
         GroupedAlignments<XAlignment> groupedAlignments = new GroupedAlignmentsSimpleImpl(function, xAlignments);
         Set<AlignmentGroup> groups = groupedAlignments.getAlignmentGroups();
@@ -466,7 +512,7 @@ public class ConformanceChecker {
                     ));
         }
 
-        return new AlignmentGroupResult(output, activityGraphDetails);
+        return new AlignmentGroupResult(output, activityGraphDetails, customElements);
     }
 
     private XTraceResolver buildTraceMap(ResultReplay logReplayResult) {
@@ -500,8 +546,8 @@ public class ConformanceChecker {
     // * * * * * GRAPHIC RENDERERS * * * * *
     // -------------------------------------
 
-    public String renderDot(int i) {
-        if(i==2 &&result != null) {
+    public Graph renderDot(int i) {
+        if(i==2 && result != null) {
             DataPetriNet original = result.getNet();
             PetriNetWithDataFactory factory=new PetriNetWithDataFactory(original, original.getLabel());
 
@@ -563,15 +609,52 @@ public class ConformanceChecker {
                 else
                     context.log("Could not get statistics for variable "+node.getVarName(), Logger.MessageLevel.WARNING);
             }
-            return GraphVisualizerPlugin.runUI(context, cloneNet);
+            return new Graph(GraphVisualizerPlugin.runUI(context, cloneNet, getIdToLabel(original)), getGuards(original));
         }
         if(i>=1 && customNet != null)
-            return GraphVisualizerPlugin.runUI(context, customNet);
+            return new Graph(GraphVisualizerPlugin.runUI(context, customNet, getIdToLabel(customNet)), getGuards(customNet));
         else if(i>=0 && net != null)
-            return GraphVisualizerPlugin.runUI(context, net);
+            return new Graph(GraphVisualizerPlugin.runUI(context, net, getIdToLabel(net)), getGuards(net));
         else
-            return "";
+            return null;
+    }
 
+    private List<Utils.PairOfStrings> getGuards(DataPetriNet net) {
+        List<Utils.PairOfStrings> guards = new ArrayList<>();
+        int n = 1;
+
+        for(Transition t : net.getTransitions()) {
+            String guard = ((PNWDTransition) t).getGuardAsString();
+            if(guard != "" && guard != null) {
+                if(t.isInvisible()) {
+                    guards.add(new PairOfStrings("Inv"+n, guard));
+                    n++;
+                }
+                else
+                    guards.add(new PairOfStrings(t.getLabel(), guard));
+            }
+
+        }
+
+        return guards;
+    }
+
+    private Map<String, String> getIdToLabel(DataPetriNet net) {
+        Map<String, String> map = new HashMap<>();
+        int n = 1;
+
+        for(Transition t : net.getTransitions()) {
+            String guard = ((PNWDTransition) t).getGuardAsString();
+            if(guard != null && !guard.equals("")) {
+                if(t.isInvisible()) {
+                    map.put(t.getId().toString(), "Inv"+n);
+                    n++;
+                }
+            }
+
+        }
+
+        return map;
     }
 
     public String renderDot2() {
@@ -651,6 +734,13 @@ public class ConformanceChecker {
         }
 
         return labelToTransition;
+    }
+
+    private void addConnection(DataPetriNet dpn, XLog log) {
+        String logName = XConceptExtension.instance().extractName(log);
+        String label = "Connection between " + dpn.getLabel() + " and " + (logName != null ? logName : "unnamed log");
+        EvClassLogPetrinetConnection con = new EvClassLogPetrinetConnection(label, dpn, log, finalMapping.getClassifier(), finalMapping.getMap());
+        context.addConnection(con);
     }
 
     private TransEvClassMapping queryActivityMapping(DataPetriNet net, XLog log) {
