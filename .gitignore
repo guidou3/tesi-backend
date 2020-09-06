@@ -58,3 +58,6 @@ build/
 
 prova1.pnml
 prova2.pnml
+
+/target/thesis-0.1.jar
+target/thesis-0.1.jar.original

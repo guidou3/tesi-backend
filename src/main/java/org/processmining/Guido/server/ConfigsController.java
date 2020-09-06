@@ -70,6 +70,7 @@ public class ConfigsController {
             cc.setMapping(finalMapping);
             return ResponseEntity.status(HttpStatus.OK).body("all ok");
         } catch (Exception e) {
+            e.printStackTrace();
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED).body("Failed to post!");
         }
     }

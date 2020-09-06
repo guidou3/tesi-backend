@@ -10,13 +10,13 @@ import java.util.Objects;
 public class ConstraintSingleResult {
     private String type;
     private String id;
-    private boolean result;
+    private int result;
     private List<String> details;
     private String source;
     private String target;
     private List<String> transitions;
 
-    public ConstraintSingleResult(Constraint constraint, String type, String id, boolean result, List<String> details) {
+    public ConstraintSingleResult(Constraint constraint, String type, String id, int result, List<String> details) {
         this.type = type;
         this.id = id;
         this.result = result;
@@ -59,7 +59,7 @@ public class ConstraintSingleResult {
         return type;
     }
 
-    public boolean getResult() {
+    public int getResult() {
         return result;
     }
 

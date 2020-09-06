@@ -214,7 +214,7 @@ public class AlignmentGroupNew implements GroupedAlignments.AlignmentGroup {
 
         for(Map.Entry<String, List<String>> entry : constraintToResults.entrySet()) {
             String type = null;
-            boolean result = true;
+            int result = 0;
             List<String> details  = new ArrayList<>();
 
             for(String label : entry.getValue()) {
@@ -223,22 +223,24 @@ public class AlignmentGroupNew implements GroupedAlignments.AlignmentGroup {
                 if(type == null) type = data[0].substring(7);
                 if(type.equals("TimeDistance") || type.equals("ConsequenceTimed") || type.equals("Resource") ||
                         type.equals("Role") || type.equals("Group")) {
-                    if(data[3].equals("Wrong")) result = false;
+                    if(data[3].equals("Wrong")) result = 1;
+                    else if(data[3].equals("Missing")) result = 2;
 
                     details.add("Guard on " + data[2] + " was " + data[3]);
                 }
                 else {
-                    if(data[2].equals("Wrong")) result = false;
+                    if(data[2].equals("Wrong")) result = 1;
+                    else if(data[2].equals("Missing")) result = 2;
                 }
             }
 
             if(type == null) continue;
             else if(type.equals("TimeDistance") || type.equals("Resource") || type.equals("Role") ||
                     type.equals("Group")) {
-                if(details.size() < 2 && result) continue;
+                if(details.size() < 2 && result == 0) continue;
             }
             else if(type.equals("ConsequenceTimed")) {
-                if(((ConsequenceTimed) ce.getConstraint(entry.getKey())).isForced() && details.size() < 2 && result)
+                if(((ConsequenceTimed) ce.getConstraint(entry.getKey())).isForced() && details.size() < 2 && result == 0)
                     continue;
             }
 

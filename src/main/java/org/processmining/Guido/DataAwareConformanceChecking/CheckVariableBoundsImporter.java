@@ -78,6 +78,9 @@ public class CheckVariableBoundsImporter {
                             maxValueMap.put(elem, maxValue == null ? tAttr.getValueMillis() : Math.max(maxValue.doubleValue(), tAttr.getValueMillis()));
                             if(elem.getType() == String.class)
                                 typeMap.put(elem, Date.class);
+                        } else if(attribute instanceof XAttributeBoolean) {
+                            if(elem.getType() == String.class)
+                                typeMap.put(elem, Boolean.class);
                         }
                     }
                 }
@@ -100,6 +103,8 @@ public class CheckVariableBoundsImporter {
                     type = minValue.getClass();
                 else if(maxValue != null)
                     type = maxValue.getClass();
+                else if(typeMap.get(elem) != null)
+                    type = typeMap.get(elem);
             }
             
             if (minValue != null && minValue.equals(maxValue))

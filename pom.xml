@@ -126,6 +126,13 @@
 		</dependency>
 		<dependency>
 			<groupId>org.processmining</groupId>
+			<artifactId>org.processmining.javailp-1.2a</artifactId>
+			<version>1.0</version>
+			<scope>system</scope>
+			<systemPath>${project.basedir}/lib/javailp-1.2a.jar</systemPath>
+		</dependency>
+		<dependency>
+			<groupId>org.processmining</groupId>
 			<artifactId>org.processmining.dpn</artifactId>
 			<version>1.0</version>
 			<scope>system</scope>

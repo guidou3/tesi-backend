@@ -23,6 +23,7 @@ import org.processmining.Guido.Result.GroupOutput;
 import org.processmining.Guido.converters.*;
 import org.processmining.Guido.importers.*;
 import org.processmining.Guido.mapping.*;
+import org.processmining.Guido.utils.LogEditor;
 import org.processmining.Guido.utils.Utils;
 import org.processmining.contexts.uitopia.DummyUIPluginContext;
 import org.processmining.contexts.uitopia.UIPluginContext;
@@ -120,15 +121,22 @@ public class ConformanceChecker {
     public ConformanceChecker(boolean bool) {
         this();
         try {
-            hasCustomElements = bool;
 
-            setModelBpmn("./data/prova.bpmn");
-            setLog("./data/road_fines_with_remaining_amount_variable.xes.gz");
-            setCustomElements("./data/customElements.cbpmn");
+//            setModelBpmn("./data/sintetico.bpmn");
+//            setLog("./data/sintetico_v2.zip");
+//            log = LogEditor.removePercentageOfResources(log);
+//            setCustomElements("./data/vincoli_sintetico.cbpmn");
+
+//            setModelBpmn("./data/prova.bpmn");
+//            setLog("./data/road_fines_with_remaining_amount_variable.xes.gz");
+//            setCustomElements("./data/customElements.cbpmn");
+//            log = DPNConverter.renameTraces(log);
+
+//            changeLog();
+//
 
 //            extractTraceCases();
 
-//            convertBpmnToDpn();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -160,7 +168,13 @@ public class ConformanceChecker {
         log = LogImporter.importLog(context, logFile);
     }
 
-    public void exportLog(String name) {
+    public void changeLog() {
+//        log = DPNConverter.normalizeLog(log);
+        log = LogEditor.changeLog2(log);
+        exportLog("sintetico_v2.xes", log);
+    }
+
+    public void exportLog(String name, XLog log) {
         try {
             // name = "newLog.xes"
             File file = new File(name);
@@ -196,22 +210,24 @@ public class ConformanceChecker {
     }
 
     public void extractTraceCases() {
-        Map<Integer, Integer> traceCases = new HashMap<>();
+        Map<String, Integer> numberOfEvents = new HashMap<>();
+        int n = 0;
 
         for (XTrace oldTrace : log) {
-            int n = 0;
+            XEvent last = null;
             for (XEvent event : oldTrace) {
-                n++;
+                last = event;
             }
 
-            if(traceCases.get(n) != null)
-                traceCases.put(n, traceCases.get(n)+1);
-            else
-                traceCases.put(n, 1);
+            assert last != null;
+            String name = last.getAttributes().get("concept:name").toString();
+            numberOfEvents.merge(name, 1, Integer::sum);
+            n++;
+
         }
 
-        for(Map.Entry<Integer, Integer> entry : traceCases.entrySet())
-            System.out.println(entry.getKey() + " " + entry.getValue());
+        for(Map.Entry<String, Integer> entry : numberOfEvents.entrySet())
+            System.out.println(entry.getKey() + " " + entry.getValue() + " " + (double) entry.getValue()/n*100);
     }
 
     public void setCustomElements(String s) {
@@ -256,7 +272,6 @@ public class ConformanceChecker {
         dpnConverter = new DPNConverter(config);
         customNet = dpnConverter.convertDpn(net, customElements);
         dpnConverter.updateIdMapping(activityTransitionMapping);
-
     }
 
     public void updateFinalMapping1() {
@@ -281,6 +296,8 @@ public class ConformanceChecker {
 
     public void setConfigs(Configs c) {
         config = c.createConfig();
+        if(!hasCustomElements)
+            log = LogEditor.filterStart(log);
     }
 
     public InitialMapping getInitialMapping() {
@@ -297,19 +314,19 @@ public class ConformanceChecker {
 
         if(hasCustomElements) {
             extractLogPositions();
-            exportDpn(net, "net.pnml");
+//            exportDpn(net, "net.pnml");
 
             initializeCustomElements();
 
             customDpnConversion();
-            exportDpn(customNet, "customNet.pnml");
+//            exportDpn(customNet, "customNet.pnml");
 
 //            CyclesFinder cf = new CyclesFinder(net);
 //            cf.findCycles();
 
             updateFinalMapping1();
             convertLog();
-//            exportLog("customlog.xes");
+//            exportLog("customlog.xes", customLog);
 
             updateFinalMapping2();
 
@@ -425,7 +442,7 @@ public class ConformanceChecker {
         Set<DataElement> dataElements = importer.getDataElements();
 
         customNet.fixDataElementsTypes(dataElements);
-        exportDpn(customNet, "prova2.pnml");
+//        exportDpn(customNet, "prova2.pnml");
 
         for (DataElement elem : dataElements) {
             Object value = elem.getMinValue();
@@ -458,7 +475,12 @@ public class ConformanceChecker {
     }
 
     public void dobBlancedDataConformance() throws ControlFlowAlignmentException, DataAlignmentException {
-        result = new BalancedDataConformance().balancedAlignmentPluginHeadless(context, customNet, customLog, config);
+        try {
+            result = new BalancedDataConformance().balancedAlignmentPluginHeadless(context, customNet, customLog, config);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
 //        return context.getProgress();
     }
 
@@ -466,7 +488,7 @@ public class ConformanceChecker {
         Object[] data = new Object[2];
         Progress progress = context.getProgress();
         data[0] = (double) progress.getValue() * 100 / progress.getMaximum();
-        data[1] = (result != null);
+        data[1] = ((double) data[0] > 0.9 && result != null);
         return data;
     }
 
@@ -512,7 +534,7 @@ public class ConformanceChecker {
                     ));
         }
 
-        return new AlignmentGroupResult(output, activityGraphDetails, customElements);
+        return new AlignmentGroupResult(output, activityGraphDetails, customElements, dpnConverter.getMissingTime());
     }
 
     private XTraceResolver buildTraceMap(ResultReplay logReplayResult) {

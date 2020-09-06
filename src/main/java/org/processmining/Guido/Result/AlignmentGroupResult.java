@@ -17,7 +17,8 @@ public class AlignmentGroupResult {
     private CustomElements customElements;
     private Map<String, ConstraintsResult> constraints;
 
-    public AlignmentGroupResult(List<GroupOutput> groups, List<ActivityGraphDetails> activityGraphDetails, CustomElements customElements) {
+    public AlignmentGroupResult(List<GroupOutput> groups, List<ActivityGraphDetails> activityGraphDetails, CustomElements customElements,
+                                Map<String, Integer> missingTime) {
         this.groups = groups;
         this.activityGraphDetails = activityGraphDetails;
         constraints = new HashMap<>();
@@ -31,6 +32,9 @@ public class AlignmentGroupResult {
         }
 
         if(constraints.size() > 0) {
+            for(Map.Entry<String, Integer> entry : missingTime.entrySet())
+                constraints.get(entry.getKey()).fixMissing(entry.getValue());
+
             this.customElements = customElements.clone();
 
             Map<String, String> customColors = new HashMap<>();

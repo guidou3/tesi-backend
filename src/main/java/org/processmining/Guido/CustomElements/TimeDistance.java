@@ -3,19 +3,25 @@ package org.processmining.Guido.CustomElements;
 import org.processmining.Guido.CustomElements.enums.*;
 
 public class TimeDistance extends CustomConnection {
-    private Side side;
+    private Side targetSide;
+    private Side sourceSide;
     private TimeData timeData;
     private Ineq ineq;
 
     public TimeDistance(TimeDistance timeDistance) {
         super(timeDistance);
-        this.side = timeDistance.side;
+        this.sourceSide = timeDistance.sourceSide;
+        this.targetSide = timeDistance.targetSide;
         this.timeData = timeDistance.timeData;
         this.ineq = timeDistance.ineq;
     }
 
-    public Side getSide() {
-        return side;
+    public Side getSourceSide() {
+        return sourceSide;
+    }
+
+    public Side getTargetSide() {
+        return targetSide;
     }
 
     public float getTime() {
