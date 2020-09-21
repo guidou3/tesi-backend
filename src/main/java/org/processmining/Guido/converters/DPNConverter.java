@@ -638,8 +638,8 @@ public class DPNConverter {
         if(transitions.size() == 0) return;
         else if(transitions.size() == 1) {
             if(constraint.getResType() == ResType.INSTANCE) {
-                guard1 = map.get(t1) + prime + "==" + constraint.getName();
-                guard2 = "("+map.get(t1) + "!=" + constraint.getName()+")";
+                guard1 = map.get(t1) + prime + "=='" + constraint.getName()+"'";
+                guard2 = "("+map.get(t1) + "!='" + constraint.getName()+"')";
                 guard3 = "(" + map.get(t1) + "==" + missing + ")";
             }
             else return;
@@ -715,8 +715,8 @@ public class DPNConverter {
                     if(!evaluationMode)
                         guard1b = new StringBuilder(map.get(t1) + prime + "==" + constraint.getName());
                     else {
-                        guard1b = new StringBuilder("(" + map.get(t1) + "!=" + missing + map.get(t1) + prime + "==" + constraint.getName() +")");
-                        guard2b = new StringBuilder("(" + map.get(t1) + "!=" + missing + map.get(t1) + prime + "!=" + constraint.getName() +")");
+                        guard1b = new StringBuilder("(" + map.get(t1) + "!=" + missing + map.get(t1) + prime + "=='" + constraint.getName() +"')");
+                        guard2b = new StringBuilder("(" + map.get(t1) + "!=" + missing + map.get(t1) + prime + "!='" + constraint.getName() +"')");
                         guard3b = new StringBuilder(map.get(t1) + prime + "==" + missing);
                     }
                     break;
